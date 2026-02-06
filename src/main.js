@@ -8,6 +8,9 @@ import { createApp } from './app.js';
 import { showNotification } from './utils/notification.js';
 import { setupErrorHandling } from './utils/errorHandler.js';
 
+// Production API base URL only
+const API_BASE = 'https://okz.onrender.com/api/v1';
+
 // Global application state
 let appInstance = null;
 
@@ -17,15 +20,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Show initial loading state
         showAppLoading(true);
         
-        // Check if we're in development or production
-        const isDevelopment = window.location.hostname === 'localhost' || 
-                              window.location.hostname === '127.0.0.1';
-        
-        if (isDevelopment) {
-            console.log('🚀 OKZ Sports - Development Mode');
-            console.log('📁 Environment: Development');
-            console.log('⏰ Load Time:', new Date().toISOString());
-        }
+        // Log production mode
+        console.log('🚀 OKZ Sports - Production Mode');
+        console.log('📡 API URL:', API_BASE);
+        console.log('⏰ Load Time:', new Date().toISOString());
         
         // Set up global error handling
         setupErrorHandling();
@@ -63,6 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <h1><i class="fas fa-exclamation-triangle"></i> Application Error</h1>
                     <p>Failed to initialize the OKZ Sports application.</p>
                     <p class="error-details">${error.message}</p>
+                    <p class="api-url">API URL: ${API_BASE}</p>
                     <div class="error-actions">
                         <button onclick="window.location.reload()" class="btn btn-primary">
                             <i class="fas fa-redo"></i> Reload Page
@@ -78,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <li>Clear browser cache and reload</li>
                             <li>Try using a different browser</li>
                             <li>Contact support if problem persists</li>
+                            <li>API Endpoint: ${API_BASE}/status</li>
                         </ul>
                     </div>
                 </div>
@@ -120,6 +120,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 font-size: 12px;
                 color: #dc2626;
                 margin: 20px 0;
+            }
+            .api-url {
+                background: #e0f2fe;
+                padding: 10px;
+                border-radius: 6px;
+                font-family: monospace;
+                font-size: 12px;
+                color: #0369a1;
+                margin: 10px 0;
             }
             .error-actions {
                 display: flex;
@@ -172,7 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Define helper function
         window.showHelp = function() {
-            alert('Contact support:\n📧 support@okz-sports.com\n📞 +20 123 456 7890');
+            alert(`Contact support:\n📧 support@okz-sports.com\n📞 +20 123 456 7890\n\nAPI Issues:\nProduction: ${API_BASE}/status`);
         };
     } finally {
         // Hide loading screen
@@ -183,29 +192,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Check API health status
 async function checkAPIHealth() {
     try {
-        const response = await fetch('/api/status');
+        console.log('🔍 Checking API health at:', `${API_BASE}/status`);
+        
+        const response = await fetch(`${API_BASE}/status`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
         if (!response.ok) {
-            throw new Error('API server is not responding');
+            console.error('❌ API Response Status:', response.status, response.statusText);
+            throw new Error(`API server responded with ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
         console.log('✅ API Status:', data.status);
-        console.log('🏓 Courts Available:', data.system.courts.total);
+        console.log('🏓 Courts Available:', data.system?.courts?.total || 'Unknown');
+        console.log('📊 API Version:', data.version || 'Unknown');
         
         // Update page title with court count
-        document.title = `OKZ Sports - ${data.system.courts.total} Courts Available`;
+        if (data.system?.courts?.total) {
+            document.title = `OKZ Sports - ${data.system.courts.total} Courts Available`;
+        }
         
         return true;
     } catch (error) {
-        console.warn('⚠️ API health check failed:', error.message);
+        console.error('⚠️ API health check failed:', error.message);
+        console.error('📡 Failed URL:', `${API_BASE}/status`);
         
         // Show warning but don't block app initialization
         setTimeout(() => {
             showNotification({
                 type: 'warning',
                 title: 'API Connection Issue',
-                message: 'Some features may be limited. Please check your connection.',
-                duration: 3000
+                message: `Cannot connect to API at ${API_BASE}. Some features may be limited.`,
+                duration: 5000
             });
         }, 2000);
         
@@ -236,38 +259,6 @@ function showAppLoading(show) {
     }
 }
 
-// Handle service worker for PWA capabilities
-if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(registration => {
-            console.log('✅ ServiceWorker registered:', registration.scope);
-            
-            // Check for updates
-            registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                console.log('🔄 ServiceWorker update found');
-                
-                newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        showNotification({
-                            type: 'info',
-                            title: 'Update Available',
-                            message: 'New version available. Refresh to update.',
-                            duration: 5000,
-                            action: {
-                                text: 'Refresh',
-                                onClick: () => window.location.reload()
-                            }
-                        });
-                    }
-                });
-            });
-        }).catch(err => {
-            console.warn('⚠️ ServiceWorker registration failed:', err);
-        });
-    });
-}
-
 // Handle online/offline status
 window.addEventListener('online', () => {
     showNotification({
@@ -290,7 +281,8 @@ window.addEventListener('offline', () => {
 // Add global helper functions
 window.OKZ = {
     version: '1.0.0',
-    environment: window.location.hostname === 'localhost' ? 'development' : 'production',
+    environment: 'production',
+    apiBaseUrl: API_BASE,
     
     // Utility functions
     formatDate(date) {
@@ -328,6 +320,9 @@ window.OKZ = {
             localStorage.removeItem('adminToken');
             localStorage.removeItem('user');
             localStorage.removeItem('admin');
+            localStorage.removeItem('okz_token');
+            localStorage.removeItem('okz_admin_token');
+            localStorage.removeItem('okz_refresh_token');
             
             // Show logout notification
             showNotification({
@@ -341,6 +336,20 @@ window.OKZ = {
             this.navigateTo('/');
         } catch (error) {
             console.error('Logout error:', error);
+        }
+    },
+    
+    // Test API connection
+    async testApiConnection() {
+        try {
+            const response = await fetch(`${API_BASE}/status`);
+            if (response.ok) {
+                return { success: true, message: 'API is reachable' };
+            } else {
+                return { success: false, message: `API responded with ${response.status}` };
+            }
+        } catch (error) {
+            return { success: false, message: error.message };
         }
     }
 };
