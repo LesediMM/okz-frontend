@@ -1,190 +1,67 @@
 /**
- * OKZ Sports - API Client
- * Developed by S.R.C Laboratories
- * Main API configuration and HTTP client
+ * src/api/index.js
+ * Central API Configuration & Request Wrapper
  */
 
-// API configuration
-const API_CONFIG = {
-    BASE_URL: import.meta.env.VITE_API_URL || '/api/v1',
-    TIMEOUT: 30000, // 30 seconds
-    HEADERS: {
+export const API_BASE_URL = 'https://okz.onrender.com/api/v1';
+
+/**
+ * Global request wrapper to handle headers, auth, and common errors
+ * @param {string} endpoint - The API path (e.g., '/bookings')
+ * @param {object} options - Fetch options (method, body, etc.)
+ */
+export const request = async (endpoint, options = {}) => {
+    // 1. Prepare Headers
+    const headers = {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        ...options.headers,
+    };
+
+    // 2. Attach Auth Token if available in localStorage
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // 3. Attach Admin Token for admin-specific paths
+    if (endpoint.startsWith('/admin')) {
+        const adminToken = localStorage.getItem('adminToken');
+        if (adminToken) {
+            headers['Authorization'] = `Bearer ${adminToken}`;
+        }
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers,
+        });
+
+        // 4. Handle Global Error States
+        if (response.status === 401) {
+            // Token expired or invalid - clear local session
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('user');
+            
+            // Only redirect if we aren't already on the login page
+            if (!window.location.hash.includes('/login')) {
+                window.location.hash = '#/login';
+            }
+        }
+
+        const data = await response.json();
+
+        // 5. Handle Backend-level errors (even if status is 200)
+        if (data.status === 'error') {
+            throw new Error(data.message || 'An internal error occurred');
+        }
+
+        return data;
+    } catch (error) {
+        console.error(`[API Error] ${endpoint}:`, error.message);
+        return {
+            status: 'error',
+            message: error.message || 'Network connection failed'
+        };
     }
 };
-
-// HTTP client class
-class ApiClient {
-    constructor() {
-        this.baseUrl = API_CONFIG.BASE_URL;
-        this.authToken = localStorage.getItem('okz_token');
-        this.adminToken = localStorage.getItem('okz_admin_token');
-    }
-    
-    // Generic request method
-    async request(endpoint, options = {}) {
-        const url = `${this.baseUrl}${endpoint}`;
-        
-        // Prepare headers
-        const headers = {
-            ...API_CONFIG.HEADERS,
-            ...options.headers
-        };
-        
-        // Add authentication token if available
-        if (this.authToken) {
-            headers['Authorization'] = `Bearer ${this.authToken}`;
-        } else if (this.adminToken) {
-            headers['Authorization'] = `Bearer ${this.adminToken}`;
-        }
-        
-        // Setup request controller for timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
-        
-        try {
-            const response = await fetch(url, {
-                ...options,
-                headers,
-                signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            // Handle 401 Unauthorized (token expired)
-            if (response.status === 401) {
-                this.handleUnauthorized();
-                throw new Error('Session expired. Please login again.');
-            }
-            
-            // Parse response
-            let data;
-            try {
-                data = await response.json();
-            } catch (parseError) {
-                data = { message: 'Invalid response from server' };
-            }
-            
-            // Throw error for non-2xx responses
-            if (!response.ok) {
-                throw new Error(data.message || `Request failed with status ${response.status}`);
-            }
-            
-            return data;
-            
-        } catch (error) {
-            clearTimeout(timeoutId);
-            
-            // Handle specific error types
-            if (error.name === 'AbortError') {
-                throw new Error('Request timeout. Please try again.');
-            }
-            
-            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                throw new Error('Network error. Please check your connection.');
-            }
-            
-            throw error;
-        }
-    }
-    
-    // Handle unauthorized access (token expired)
-    handleUnauthorized() {
-        // Clear tokens
-        localStorage.removeItem('okz_token');
-        localStorage.removeItem('okz_admin_token');
-        localStorage.removeItem('okz_user');
-        localStorage.removeItem('okz_admin');
-        
-        // Dispatch event for app to handle
-        window.dispatchEvent(new CustomEvent('auth-expired'));
-    }
-    
-    // Set authentication token
-    setAuthToken(token, isAdmin = false) {
-        if (isAdmin) {
-            this.adminToken = token;
-            localStorage.setItem('okz_admin_token', token);
-        } else {
-            this.authToken = token;
-            localStorage.setItem('okz_token', token);
-        }
-    }
-    
-    // Clear authentication tokens
-    clearAuthTokens() {
-        this.authToken = null;
-        this.adminToken = null;
-        localStorage.removeItem('okz_token');
-        localStorage.removeItem('okz_admin_token');
-        localStorage.removeItem('okz_user');
-        localStorage.removeItem('okz_admin');
-    }
-    
-    // Check if user is authenticated
-    isAuthenticated() {
-        return !!this.authToken;
-    }
-    
-    // Check if admin is authenticated
-    isAdminAuthenticated() {
-        return !!this.adminToken;
-    }
-    
-    // GET request
-    async get(endpoint, params = {}) {
-        const queryString = new URLSearchParams(params).toString();
-        const url = queryString ? `${endpoint}?${queryString}` : endpoint;
-        return this.request(url, { method: 'GET' });
-    }
-    
-    // POST request
-    async post(endpoint, data = {}) {
-        return this.request(endpoint, {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
-    }
-    
-    // PUT request
-    async put(endpoint, data = {}) {
-        return this.request(endpoint, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
-    }
-    
-    // DELETE request
-    async delete(endpoint) {
-        return this.request(endpoint, { method: 'DELETE' });
-    }
-    
-    // PATCH request
-    async patch(endpoint, data = {}) {
-        return this.request(endpoint, {
-            method: 'PATCH',
-            body: JSON.stringify(data)
-        });
-    }
-    
-    // Upload file (multipart/form-data)
-    async upload(endpoint, formData) {
-        return this.request(endpoint, {
-            method: 'POST',
-            headers: {
-                // Don't set Content-Type for FormData (browser will set it with boundary)
-            },
-            body: formData
-        });
-    }
-}
-
-// Create global API instance
-const api = new ApiClient();
-
-// Export API instance and client class
-export { api, ApiClient };
-
-// Export default API instance
-export default api;
