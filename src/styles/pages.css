@@ -1,66 +1,199 @@
 /* src/styles/pages.css */
 
-/* Auth Pages (Login/Register) */
+/* --- HOME PORTAL SELECTION --- */
+.home-portal {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 4rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.portal-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.logo-wrapper h1 {
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    font-weight: 900;
+    color: var(--primary-color);
+    letter-spacing: -2px;
+}
+
+.badge {
+    background: #333;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #888;
+}
+
+.portal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2.5rem;
+    width: 100%;
+}
+
+.portal-card {
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: 3rem;
+    border: 1px solid #333;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+}
+
+.portal-card:hover {
+    transform: translateY(-12px);
+    border-color: var(--primary-color);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+/* --- AUTH PAGES (LOGIN / REGISTER) --- */
 .auth-page {
-    max-width: 400px;
+    max-width: 450px;
     margin: 4rem auto;
     background: var(--card-bg);
-    padding: 2.5rem;
-    border-radius: 16px;
+    padding: 3rem;
+    border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-/* Booking Grid */
+.auth-page h2 {
+    margin-bottom: 2rem;
+    text-align: center;
+    color: var(--primary-color);
+}
+
+/* --- BOOKING SYSTEM --- */
+.booking-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
 .availability-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 10px;
-    margin-top: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+    margin-top: 2rem;
 }
 
 .slot {
-    padding: 10px;
+    padding: 15px 10px;
     text-align: center;
-    background: #3d3d3d;
-    border-radius: 6px;
+    background: #252525;
+    border: 1px solid #444;
+    border-radius: 10px;
     cursor: pointer;
-    border: 1px solid transparent;
+    font-weight: 600;
+    transition: var(--transition);
 }
 
 .slot.available:hover {
     border-color: var(--primary-color);
     color: var(--primary-color);
+    background: rgba(0, 255, 136, 0.05);
 }
 
 .slot.booked {
-    opacity: 0.3;
+    background: #1a1a1a;
+    color: #444;
     cursor: not-allowed;
-    text-decoration: line-through;
+    border-style: dashed;
 }
 
 .slot.selected {
     background: var(--primary-color);
     color: var(--secondary-color);
+    border-color: var(--primary-color);
 }
 
-/* My Bookings Card */
-.booking-card {
+/* --- DASHBOARD & STATS --- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
     background: var(--card-bg);
     padding: 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-left: 4px solid var(--accent-color);
+    border-radius: 16px;
+    border-bottom: 3px solid var(--primary-color);
 }
 
-.status-badge {
-    padding: 4px 12px;
-    border-radius: 20px;
+.stat-label {
+    font-size: 0.8rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stat-card h2 {
+    font-size: 2rem;
+    margin-top: 0.5rem;
+}
+
+/* --- TABLES (ADMIN) --- */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.admin-table th {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 2px solid #333;
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.admin-table td {
+    padding: 15px 12px;
+    border-bottom: 1px solid #222;
+}
+
+.type-tag {
+    padding: 4px 8px;
+    border-radius: 4px;
     font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.type-tag.paddle { background: rgba(0, 212, 255, 0.1); color: var(--accent-color); }
+.type-tag.tennis { background: rgba(0, 255, 136, 0.1); color: var(--primary-color); }
+
+/* --- STATUS BADGES --- */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
     text-transform: uppercase;
 }
 
 .status-pending { background: #ffd32a; color: #000; }
 .status-confirmed { background: var(--primary-color); color: #000; }
+.status-cancelled { background: #ff4757; color: #fff; }
+
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+    .portal-grid { grid-template-columns: 1fr; }
+    .auth-page { padding: 1.5rem; margin: 1rem; }
+    .logo-wrapper h1 { font-size: 2.5rem; }
+}
