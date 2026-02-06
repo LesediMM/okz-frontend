@@ -1,0 +1,52 @@
+{
+    "name": "okz-frontend",
+    "version": "1.0.0",
+    "type": "module",
+    "description": "OKZ Sports Frontend Application",
+    "main": "src/main.js",
+    "scripts": {
+      "dev": "vite",
+      "build": "vite build",
+      "preview": "vite preview",
+      "deploy": "npm run build",
+      "start": "vite preview --port 3000",
+      "test": "echo \"No tests specified\" && exit 0",
+      "lint": "echo \"No linter configured\"",
+      "format": "echo \"No formatter configured\""
+    },
+    "dependencies": {
+      "chart.js": "^4.4.1",
+      "date-fns": "^2.30.0"
+    },
+    "devDependencies": {
+      "vite": "^5.0.0"
+    },
+    "keywords": [
+      "sports",
+      "booking",
+      "courts",
+      "paddle",
+      "tennis",
+      "okz",
+      "frontend"
+    ],
+    "author": "S.R.C Laboratories",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/srclabs/okz-sports-frontend"
+    },
+    "bugs": {
+      "url": "https://github.com/srclabs/okz-sports-frontend/issues"
+    },
+    "homepage": "https://okz-sports.com",
+    "engines": {
+      "node": ">=16.0.0",
+      "npm": ">=8.0.0"
+    },
+    "browserslist": [
+      "defaults",
+      "not IE 11",
+      "maintained node versions"
+    ]
+  }
