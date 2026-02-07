@@ -9,7 +9,7 @@ const Home = () => {
             {/* --- Hero Section --- */}
             <header className="hero-section">
                 <div className="hero-content">
-                    <div className="logo-badge">OKZ SPORTS</div>
+                    {/* REMOVED: logo-badge (OKZ SPORTS) */}
                     <h1 className="hero-title">Elevate your game.</h1>
                     <p className="hero-subtitle">
                         Premier Padel & Tennis Court Management in the heart of Egypt.
@@ -70,25 +70,7 @@ const Home = () => {
                 </div>
             </div>
 
-            {/* --- Info Footer --- */}
-            <footer className="apple-footer">
-                <div className="footer-glass">
-                    <div className="info-bits">
-                        <div className="bit">
-                            <strong>HOURS</strong>
-                            <span>8:00 AM — 10:00 PM</span>
-                        </div>
-                        <div className="bit">
-                            <strong>LOCATION</strong>
-                            <span>Main Sports Complex</span>
-                        </div>
-                    </div>
-                    <div className="copyright-area">
-                        <p>© {new Date().getFullYear()} S.R.C Laboratories. All Rights Reserved.</p>
-                        <p className="location-tag">Made for Egypt 🇪🇬</p>
-                    </div>
-                </div>
-            </footer>
+            {/* REMOVED: Duplicate Footer (The S.R.C Laboratories / 400 EGP part) */}
 
             <style>{`
                 .home-portal {
@@ -97,28 +79,20 @@ const Home = () => {
                     padding-bottom: 4rem;
                 }
 
-                /* Hero Typography */
                 .hero-section {
                     text-align: center;
                     padding: 4rem 1rem 3rem;
                 }
-                .logo-badge {
-                    font-weight: 700;
-                    font-size: 0.8rem;
-                    letter-spacing: 2px;
-                    color: var(--system-gray);
-                    margin-bottom: 1rem;
-                }
+
                 .hero-title {
                     font-size: clamp(2.5rem, 8vw, 4rem);
                     font-weight: 800;
                     letter-spacing: -0.04em;
                     line-height: 1.1;
                     margin-bottom: 1rem;
-                    background: linear-gradient(180deg, #000 0%, #636366 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
+                    color: #000;
                 }
+
                 .hero-subtitle {
                     font-size: 1.25rem;
                     color: var(--text-muted);
@@ -126,15 +100,16 @@ const Home = () => {
                     margin: 0 auto;
                 }
 
-                /* Glass Card Specifics */
                 .main-portal {
                     text-align: center;
                     margin-top: 2rem;
                 }
+
                 .apple-icon {
                     font-size: 3rem;
                     margin-bottom: 1rem;
                 }
+
                 .feature-grid {
                     display: flex;
                     justify-content: center;
@@ -144,82 +119,68 @@ const Home = () => {
                     background: rgba(0,0,0,0.03);
                     border-radius: 14px;
                 }
+
                 .feature-item {
                     display: flex;
                     flex-direction: column;
                 }
+
                 .feature-label {
                     font-size: 0.7rem;
                     font-weight: 600;
                     text-transform: uppercase;
                     color: var(--text-muted);
                 }
+
                 .feature-value {
                     font-weight: 700;
                     font-size: 1.1rem;
                 }
 
-                /* Layout */
                 .action-stack {
                     display: flex;
                     flex-direction: column;
                     gap: 12px;
                 }
+
                 .action-row {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
                     gap: 12px;
                 }
+
                 .btn-large {
                     padding: 18px !important;
                     font-size: 1.1rem;
+                    border: none;
+                    cursor: pointer;
                 }
+
+                .btn-secondary {
+                    background: rgba(0,0,0,0.05);
+                    border: none;
+                    cursor: pointer;
+                }
+
                 .btn-link {
                     background: transparent;
+                    border: none;
                     color: var(--system-blue);
                     font-size: 0.95rem;
+                    cursor: pointer;
+                    margin-top: 10px;
                 }
 
-                /* Footer */
-                .apple-footer {
-                    margin-top: 5rem;
-                    text-align: center;
-                }
-                .info-bits {
-                    display: flex;
-                    justify-content: center;
-                    gap: 3rem;
-                    margin-bottom: 2rem;
-                }
-                .bit strong {
-                    display: block;
-                    font-size: 0.65rem;
-                    letter-spacing: 1px;
-                    color: var(--text-muted);
-                    margin-bottom: 4px;
-                }
-                .bit span {
-                    font-weight: 500;
-                    font-size: 0.9rem;
-                }
-                .copyright-area {
-                    font-size: 0.75rem;
-                    color: var(--text-muted);
-                    border-top: 0.5px solid rgba(0,0,0,0.1);
-                    padding-top: 2rem;
-                }
-
-                /* Animation */
                 .apple-fade-in {
                     animation: fadeIn 0.8s ease-out;
                 }
+
                 @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
 
                 @media (max-width: 600px) {
-                    .info-bits { flex-direction: column; gap: 1.5rem; }
                     .hero-title { font-size: 2.5rem; }
                 }
             `}</style>
