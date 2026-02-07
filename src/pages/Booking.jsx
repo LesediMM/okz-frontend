@@ -6,7 +6,7 @@ const Booking = ({ user }) => {
     
     const [bookingData, setBookingData] = useState({
         date: new Date().toISOString().split('T')[0],
-        courtType: 'padel',
+        courtType: 'paddle', // Fixed: Back-end expects 'paddle'
         courtNumber: 1,
         timeSlot: '',
         duration: 1
@@ -14,9 +14,9 @@ const Booking = ({ user }) => {
 
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Court Mapping - Apple Style Segment Logic
-    const courts = bookingData.courtType === 'padel' 
-        ? [{ v: 1, t: 'Padel Court 1' }, { v: 2, t: 'Padel Court 2' }]
+    // Court Mapping - Synced with Backend logic
+    const courts = bookingData.courtType === 'paddle' 
+        ? [{ v: 1, t: 'Paddle Court 1' }, { v: 2, t: 'Paddle Court 2' }]
         : [{ v: 3, t: 'Tennis Court 1' }, { v: 4, t: 'Tennis Court 2' }, { v: 5, t: 'Tennis Court 3' }];
 
     const timeSlots = [];
@@ -30,8 +30,8 @@ const Booking = ({ user }) => {
         setBookingData(prev => ({ 
             ...prev, 
             [name]: name === 'courtNumber' || name === 'duration' ? Number(value) : value,
-            // Reset court number if type changes to ensure valid selection
-            ...(name === 'courtType' && { courtNumber: value === 'padel' ? 1 : 3 })
+            // Logic: If user switches to tennis, default to court 3. If paddle, default to 1.
+            ...(name === 'courtType' && { courtNumber: value === 'paddle' ? 1 : 3 })
         }));
     };
 
@@ -48,17 +48,24 @@ const Booking = ({ user }) => {
             });
 
             const data = await res.json();
-            if (res.ok) { navigate('/my-bookings'); } 
-            else { alert(data.message); }
-        } catch (e) { alert("Connection error."); } 
-        finally { setIsProcessing(false); }
+            if (res.ok) { 
+                navigate('/my-bookings'); 
+            } else { 
+                // Display the specific backend error (e.g., "Cannot book more than 30 days in advance")
+                alert(data.errors ? data.errors[0].message : data.message); 
+            }
+        } catch (e) { 
+            alert("Connection error. Please try again."); 
+        } finally { 
+            setIsProcessing(false); 
+        }
     };
 
     return (
         <div className="booking-page apple-fade-in">
             <header className="page-header">
                 <h1>Reserve a Court</h1>
-                <p className="text-muted">Choose your session and get ready to play.</p>
+                <p className="text-muted">Select your session details below.</p>
             </header>
 
             <div className="booking-layout">
@@ -66,9 +73,9 @@ const Booking = ({ user }) => {
                 <section className="card glass-card config-section">
                     <div className="apple-segment-control">
                         <button 
-                            className={bookingData.courtType === 'padel' ? 'active' : ''} 
-                            onClick={() => handleInputChange({ target: { name: 'courtType', value: 'padel' }})}
-                        >Padel</button>
+                            className={bookingData.courtType === 'paddle' ? 'active' : ''} 
+                            onClick={() => handleInputChange({ target: { name: 'courtType', value: 'paddle' }})}
+                        >Paddle</button>
                         <button 
                             className={bookingData.courtType === 'tennis' ? 'active' : ''} 
                             onClick={() => handleInputChange({ target: { name: 'courtType', value: 'tennis' }})}
@@ -78,7 +85,13 @@ const Booking = ({ user }) => {
                     <div className="input-group-row">
                         <div className="apple-input-field">
                             <label>DATE</label>
-                            <input type="date" name="date" min={new Date().toISOString().split('T')[0]} value={bookingData.date} onChange={handleInputChange} />
+                            <input 
+                                type="date" 
+                                name="date" 
+                                min={new Date().toISOString().split('T')[0]} 
+                                value={bookingData.date} 
+                                onChange={handleInputChange} 
+                            />
                         </div>
                         <div className="apple-input-field">
                             <label>DURATION</label>
@@ -113,7 +126,7 @@ const Booking = ({ user }) => {
                     </div>
                 </section>
 
-                {/* --- Step 3: Checkout --- */}
+                {/* --- Step 3: Floating Checkout --- */}
                 <div className="floating-checkout">
                     <div className="checkout-content">
                         <div className="checkout-text">
@@ -132,32 +145,31 @@ const Booking = ({ user }) => {
             </div>
 
             <style>{`
-                .booking-page { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 8rem; }
-                .page-header { margin-bottom: 2.5rem; text-align: left; }
-                .page-header h1 { font-size: 2.4rem; font-weight: 800; letter-spacing: -1px; }
+                .booking-page { max-width: 900px; margin: 0 auto; padding: 1rem 1rem 8rem; }
+                .page-header { margin-bottom: 2rem; }
+                .page-header h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 4px; }
 
-                /* Segmented Control */
                 .apple-segment-control {
                     display: flex;
-                    background: rgba(0,0,0,0.05);
+                    background: rgba(0,0,0,0.06);
                     padding: 4px;
                     border-radius: 12px;
                     margin-bottom: 1.5rem;
                 }
                 .apple-segment-control button {
                     flex: 1;
-                    padding: 8px;
+                    padding: 10px;
                     border: none;
                     background: transparent;
                     font-weight: 600;
                     font-size: 0.9rem;
-                    border-radius: 8px;
+                    border-radius: 9px;
                     cursor: pointer;
-                    transition: all 0.2s;
+                    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
                 }
                 .apple-segment-control button.active {
                     background: white;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
                     color: var(--system-blue);
                 }
 
@@ -165,7 +177,6 @@ const Booking = ({ user }) => {
                 .apple-input-field { display: flex; flex-direction: column; gap: 6px; }
                 .apple-input-field label { font-size: 0.65rem; font-weight: 800; color: var(--system-gray); letter-spacing: 0.5px; margin-left: 4px;}
                 
-                /* Time Slots */
                 .section-title { font-size: 1.1rem; font-weight: 700; margin: 2rem 0 1rem; }
                 .apple-slots-grid {
                     display: grid;
@@ -174,39 +185,44 @@ const Booking = ({ user }) => {
                 }
                 .slot-pill {
                     background: white;
-                    border: 1px solid rgba(0,0,0,0.05);
-                    padding: 12px;
+                    border: 1px solid rgba(0,0,0,0.06);
+                    padding: 14px;
                     border-radius: 12px;
                     font-weight: 600;
                     font-size: 0.9rem;
                     cursor: pointer;
                     transition: all 0.2s;
                 }
-                .slot-pill.selected { background: var(--system-blue); color: white; border-color: var(--system-blue); transform: scale(1.05); }
+                .slot-pill.selected { 
+                    background: var(--system-blue); 
+                    color: white; 
+                    border-color: var(--system-blue); 
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+                }
 
-                /* Floating Checkout Bar */
                 .floating-checkout {
                     position: fixed;
-                    bottom: 30px;
+                    bottom: 25px;
                     left: 50%;
                     transform: translateX(-50%);
-                    width: 90%;
-                    max-width: 500px;
-                    background: rgba(255,255,255,0.85);
-                    backdrop-filter: blur(20px);
-                    -webkit-backdrop-filter: blur(20px);
-                    border: 1px solid var(--glass-border);
+                    width: 92%;
+                    max-width: 480px;
+                    background: rgba(255,255,255,0.8);
+                    backdrop-filter: blur(25px);
+                    -webkit-backdrop-filter: blur(25px);
+                    border: 1px solid rgba(255,255,255,0.4);
                     border-radius: 24px;
                     padding: 16px 24px;
-                    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+                    box-shadow: 0 12px 40px rgba(0,0,0,0.12);
                     z-index: 2000;
                 }
                 .checkout-content { display: flex; justify-content: space-between; align-items: center; }
                 .checkout-text { display: flex; flex-direction: column; }
                 .total-label { font-size: 0.65rem; font-weight: 800; color: var(--system-gray); }
-                .total-price { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.5px; }
-                .checkout-btn { padding: 12px 30px !important; border-radius: 16px; font-size: 1rem; }
-                .checkout-btn.disabled { opacity: 0.5; filter: grayscale(1); }
+                .total-price { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; color: #000; }
+                .checkout-btn { padding: 12px 28px !important; border-radius: 14px; font-size: 1rem; }
+                .checkout-btn.disabled { opacity: 0.4; pointer-events: none; }
 
                 @media (max-width: 600px) {
                     .booking-page { padding-bottom: 10rem; }
