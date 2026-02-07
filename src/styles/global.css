@@ -1,149 +1,68 @@
-/* --- Apple Modern Aesthetic Variables --- */
 :root {
-    /* System Colors */
+    /* OKZ Brand Palette */
+    --brand-navy: #1A2B56;
+    --brand-sky: #A2C2E8;
     --system-blue: #007AFF;
-    --system-green: #34C759;
     --system-red: #FF3B30;
-    
-    /* Backgrounds & Text */
-    --bg-color: #F2F2F7;         /* Apple's "Grouped Table View" background */
-    --card-bg: rgba(255, 255, 255, 0.75); 
     --text-main: #1C1C1E;
-    --text-muted: #8E8E93;
+    --text-muted: #636366;
     
     /* Glassmorphism Specs */
-    --glass-border: rgba(255, 255, 255, 0.4);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
-    --blur: 18px;
+    --glass-bg: rgba(255, 255, 255, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 12px 40px rgba(26, 43, 86, 0.1);
+    --blur: 25px;
   }
   
   * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    /* SF Pro Style Typography */
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   
   body {
-    background-color: var(--bg-color);
-    background: radial-gradient(at top left, #ffffff, var(--bg-color));
+    min-height: 100vh;
     color: var(--text-main);
-    line-height: 1.5;
-    letter-spacing: -0.015em;
+    background: linear-gradient(135deg, #ffffff 0%, #dbeafe 30%, #f0f9ff 60%, #ffffff 100%);
+    background-size: 400% 400%;
+    animation: meshGradient 15s ease infinite;
+    overflow-x: hidden;
   }
   
-  /* --- The Glassmorphism Card --- */
-  .card, .auth-container, .booking-summary-card, .summary-card, .booking-card {
-    background: var(--card-bg) !important;
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
-    border: 1px solid var(--glass-border) !important;
-    border-radius: 20px !important;
+  @keyframes meshGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
     box-shadow: var(--glass-shadow);
-    padding: 24px;
-    transition: transform 0.3s ease;
-  }
-  
-  /* --- Apple Style Navbar --- */
-  .navbar {
-    background: rgba(255, 255, 255, 0.7) !important;
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
-    border-bottom: 0.5px solid rgba(0, 0, 0, 0.1) !important;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-  }
-  
-  .nav-brand {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #000;
-    text-decoration: none;
-    letter-spacing: -0.5px;
-  }
-  
-  .nav-links a {
-    color: var(--system-blue);
-    font-weight: 500;
-    font-size: 1rem;
-  }
-  
-  /* --- Minimalist Forms --- */
-  .form-group label {
-    font-weight: 600;
-    color: var(--text-main);
-    margin-left: 4px;
-    margin-bottom: 8px;
-  }
-  
-  input, select {
-    width: 100%;
-    padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    color: var(--text-main);
-    border-radius: 12px;
-    font-size: 1rem;
-    transition: border-color 0.2s;
-  }
-  
-  input:focus {
-    outline: none;
-    border-color: var(--system-blue);
-    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
-  }
-  
-  /* --- Buttons --- */
-  .btn {
-    padding: 12px 24px;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .btn-primary {
-    background: var(--system-blue) !important;
-    color: white;
+    background: var(--brand-navy) !important;
+    color: white !important;
+    border: none;
+    border-radius: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
-  .btn-primary:active {
-    transform: scale(0.97); /* Haptic-press feel */
+  .btn-primary:active { transform: scale(0.96); opacity: 0.9; }
+  
+  .apple-fade-in {
+    animation: fadeIn 0.6s ease-out;
   }
   
-  /* --- Adaptable Grid System --- */
-  .dashboard-grid, .portal-grid, .booking-form-grid {
-    display: grid;
-    gap: 20px;
-    grid-template-columns: 1fr;
-  }
-  
-  @media (min-width: 768px) {
-    .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
-    .booking-form-grid { grid-template-columns: 1fr 1fr; }
-  }
-  
-  /* --- Time Slots Grid --- */
-  .slots-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 10px;
-  }
-  
-  .time-slot-btn {
-    background: white;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    padding: 10px;
-    font-weight: 500;
-    color: var(--text-main);
-  }
-  
-  .time-slot-btn.selected {
-    background: var(--system-blue) !important;
-    color: white;
-    border-color: var(--system-blue);
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }

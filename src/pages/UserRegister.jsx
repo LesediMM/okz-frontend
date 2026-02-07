@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import '../styles/Auth.css'; // Importing your new separation of concerns style
 
 const UserRegister = () => {
     const navigate = useNavigate();
@@ -43,15 +44,17 @@ const UserRegister = () => {
 
     return (
         <div className="auth-page apple-fade-in">
-            <div className="card glass-card auth-container">
+            {/* Using the glass-panel class from global.css and auth-card from Auth.css */}
+            <div className="glass-panel auth-card">
                 <div className="auth-header">
-                    <div className="apple-logo-icon"></div>
-                    <h2>Create Account</h2>
-                    <p className="text-muted">Start your OKZ Sports journey today.</p>
+                    {/* Using your brand navy color for the icon focus */}
+                    <div className="apple-logo-icon" style={{ color: 'var(--brand-navy)' }}>🎾</div>
+                    <h2>Join OKZ</h2>
+                    <p className="text-muted">Experience premier court management.</p>
                 </div>
                 
                 <form onSubmit={handleSubmit} className="apple-form">
-                    <div className="form-group">
+                    <div className="input-group">
                         <label>Full Name</label>
                         <input 
                             type="text" 
@@ -63,7 +66,7 @@ const UserRegister = () => {
                         />
                     </div>
 
-                    <div className="form-group">
+                    <div className="input-group">
                         <label>Email Address</label>
                         <input 
                             type="email" 
@@ -75,7 +78,7 @@ const UserRegister = () => {
                         />
                     </div>
 
-                    <div className="form-group">
+                    <div className="input-group">
                         <label>Password</label>
                         <input 
                             type="password" 
@@ -87,7 +90,7 @@ const UserRegister = () => {
                         />
                     </div>
 
-                    <div className="form-group">
+                    <div className="input-group">
                         <label>Phone Number</label>
                         <input 
                             type="tel" 
@@ -102,7 +105,8 @@ const UserRegister = () => {
                     <div className="auth-actions">
                         <button 
                             type="submit" 
-                            className={`btn btn-primary btn-large ${loading ? 'btn-loading' : ''}`} 
+                            className="btn-primary"
+                            style={{ width: '100%', padding: '16px', fontSize: '1rem' }}
                             disabled={loading}
                         >
                             {loading ? 'Creating Account...' : 'Continue'}
@@ -110,105 +114,15 @@ const UserRegister = () => {
                     </div>
                 </form>
 
-                <div className="auth-footer">
-                    <p>Already a member? <Link to="/login" className="apple-link">Sign In</Link></p>
+                <div className="auth-footer" style={{ marginTop: '2rem', textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                        Already a member? 
+                        <Link to="/login" style={{ color: 'var(--brand-navy)', fontWeight: '700', marginLeft: '6px', textDecoration: 'none' }}>
+                            Sign In
+                        </Link>
+                    </p>
                 </div>
             </div>
-
-            <style>{`
-                .auth-page {
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    min-height: 80vh;
-                    padding: 1rem;
-                }
-
-                .auth-container {
-                    width: 100%;
-                    max-width: 420px;
-                    padding: 3rem 2rem !important;
-                }
-
-                .auth-header {
-                    text-align: center;
-                    margin-bottom: 2.5rem;
-                }
-
-                .apple-logo-icon {
-                    font-size: 2.5rem;
-                    margin-bottom: 0.5rem;
-                    color: #000;
-                }
-
-                .auth-header h2 {
-                    font-size: 1.8rem;
-                    font-weight: 700;
-                    letter-spacing: -0.5px;
-                }
-
-                .apple-form {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 1.25rem;
-                }
-
-                .form-group label {
-                    font-size: 0.85rem;
-                    font-weight: 600;
-                    color: var(--text-main);
-                    margin-bottom: 6px;
-                }
-
-                input {
-                    transition: all 0.2s ease;
-                    background: rgba(255, 255, 255, 0.5);
-                }
-
-                input:focus {
-                    background: #fff;
-                    transform: translateY(-1px);
-                }
-
-                .auth-actions {
-                    margin-top: 1rem;
-                }
-
-                .btn-large {
-                    width: 100%;
-                    padding: 14px !important;
-                    font-size: 1rem;
-                }
-
-                .auth-footer {
-                    margin-top: 2rem;
-                    text-align: center;
-                    font-size: 0.9rem;
-                    color: var(--text-muted);
-                }
-
-                .apple-link {
-                    color: var(--system-blue);
-                    text-decoration: none;
-                    font-weight: 600;
-                    margin-left: 4px;
-                }
-
-                .btn-loading {
-                    opacity: 0.7;
-                    cursor: not-allowed;
-                }
-
-                @media (max-width: 480px) {
-                    .auth-container {
-                        padding: 2rem 1.5rem !important;
-                        border: none !important;
-                        box-shadow: none !important;
-                        background: transparent !important;
-                        backdrop-filter: none !important;
-                    }
-                }
-            `}</style>
         </div>
     );
 };

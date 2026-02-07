@@ -1,0 +1,46 @@
+.booking-page-container { max-width: 1000px; margin: 40px auto; padding: 0 24px 140px; }
+
+.segmented-control {
+  display: flex;
+  background: rgba(26, 43, 86, 0.05);
+  padding: 5px;
+  border-radius: 14px;
+  margin-bottom: 30px;
+}
+
+.segmented-control button {
+  flex: 1; padding: 12px; border: none; background: transparent; font-weight: 700; border-radius: 10px; cursor: pointer;
+}
+
+.segmented-control button.active { background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+.time-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.time-pill {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--glass-border);
+  padding: 16px;
+  border-radius: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.time-pill.selected { background: var(--brand-navy); color: white; transform: translateY(-4px); }
+
+.floating-checkout-bar {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 550px;
+  padding: 20px 30px !important;
+}
+
+.checkout-flex { display: flex; justify-content: space-between; align-items: center; }
+.price-value { font-size: 1.6rem; font-weight: 800; color: var(--brand-navy); }

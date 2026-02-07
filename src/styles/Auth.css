@@ -1,0 +1,37 @@
+.auth-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 80px);
+    padding: 20px;
+  }
+  
+  .auth-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 40px;
+  }
+  
+  .auth-header { text-align: center; margin-bottom: 32px; }
+  .apple-logo-icon { font-size: 3rem; margin-bottom: 8px; }
+  .auth-header h2 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; color: var(--brand-navy); }
+  
+  .input-group { margin-bottom: 20px; text-align: left; }
+  .input-group label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; margin-left: 4px; }
+  
+  .auth-card input {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: rgba(255,255,255,0.6);
+    font-size: 1rem;
+    transition: all 0.2s;
+  }
+  
+  .auth-card input:focus {
+    outline: none;
+    background: #fff;
+    border-color: var(--brand-navy);
+    box-shadow: 0 0 0 4px rgba(26, 43, 86, 0.05);
+  }

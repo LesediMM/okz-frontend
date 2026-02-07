@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import '../styles/Auth.css'; // Importing your new separation of concerns style
 
 const UserLogin = ({ onLoginSuccess }) => {
     const navigate = useNavigate();
@@ -36,15 +37,16 @@ const UserLogin = ({ onLoginSuccess }) => {
 
     return (
         <div className="auth-page apple-fade-in">
-            <div className="card glass-card auth-container">
+            {/* Using glass-panel from global.css and auth-card from Auth.css */}
+            <div className="glass-panel auth-card">
                 <div className="auth-header">
-                    <div className="apple-id-icon"></div>
+                    <div className="apple-id-icon" style={{ color: 'var(--brand-navy)' }}>🎾</div>
                     <h2>Sign In</h2>
-                    <p className="text-muted">Use your OKZ Sports ID to continue.</p>
+                    <p className="text-muted">Access your OKZ Sports Portal</p>
                 </div>
                 
                 <form onSubmit={handleSubmit} className="apple-form">
-                    <div className="form-group">
+                    <div className="input-group">
                         <label>Email</label>
                         <input 
                             type="email" 
@@ -55,7 +57,7 @@ const UserLogin = ({ onLoginSuccess }) => {
                         />
                     </div>
                     
-                    <div className="form-group">
+                    <div className="input-group">
                         <label>Password</label>
                         <input 
                             type="password" 
@@ -70,117 +72,26 @@ const UserLogin = ({ onLoginSuccess }) => {
                         <button 
                             type="submit" 
                             disabled={loading} 
-                            className={`btn btn-primary btn-large ${loading ? 'btn-loading' : ''}`}
+                            className="btn-primary"
+                            style={{ width: '100%', padding: '16px', fontSize: '1rem', marginTop: '1rem' }}
                         >
                             {loading ? 'Signing in...' : 'Sign In'}
                         </button>
                     </div>
                 </form>
                 
-                <div className="auth-footer">
-                    <p>New to OKZ? <Link to="/register" className="apple-link">Create Account</Link></p>
-                    <Link to="/" className="apple-link-secondary">← Back to Home</Link>
+                <div className="auth-footer" style={{ marginTop: '2.5rem', textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                        New to OKZ? 
+                        <Link to="/register" style={{ color: 'var(--brand-navy)', fontWeight: '700', marginLeft: '6px', textDecoration: 'none' }}>
+                            Create Account
+                        </Link>
+                    </p>
+                    <Link to="/" style={{ display: 'block', marginTop: '1.5rem', color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem' }}>
+                        ← Back to Home
+                    </Link>
                 </div>
             </div>
-
-            <style>{`
-                .auth-page {
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    min-height: 85vh;
-                    padding: 20px;
-                }
-
-                .auth-container {
-                    width: 100%;
-                    max-width: 400px;
-                    padding: 3rem 2.5rem !important;
-                    text-align: center;
-                }
-
-                .auth-header {
-                    margin-bottom: 2.5rem;
-                }
-
-                .apple-id-icon {
-                    font-size: 3rem;
-                    margin-bottom: 0.5rem;
-                    color: #000;
-                    font-weight: 300;
-                }
-
-                .auth-header h2 {
-                    font-size: 1.8rem;
-                    font-weight: 700;
-                    letter-spacing: -0.5px;
-                }
-
-                .apple-form {
-                    text-align: left;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 1.25rem;
-                }
-
-                .form-group label {
-                    font-size: 0.85rem;
-                    font-weight: 600;
-                    color: var(--text-main);
-                    margin-left: 4px;
-                }
-
-                input {
-                    background: rgba(255, 255, 255, 0.4);
-                    border: 1px solid rgba(0, 0, 0, 0.08);
-                }
-
-                input:focus {
-                    background: #fff;
-                }
-
-                .btn-large {
-                    width: 100%;
-                    padding: 14px !important;
-                    font-size: 1rem;
-                    margin-top: 1rem;
-                }
-
-                .auth-footer {
-                    margin-top: 2.5rem;
-                    font-size: 0.9rem;
-                    color: var(--text-muted);
-                }
-
-                .apple-link {
-                    color: var(--system-blue);
-                    text-decoration: none;
-                    font-weight: 600;
-                }
-
-                .apple-link-secondary {
-                    display: block;
-                    margin-top: 1.5rem;
-                    color: var(--system-gray);
-                    text-decoration: none;
-                    font-size: 0.85rem;
-                    font-weight: 500;
-                }
-
-                .apple-link-secondary:hover {
-                    color: var(--text-main);
-                }
-
-                @media (max-width: 480px) {
-                    .auth-container {
-                        padding: 2rem 1rem !important;
-                        background: transparent !important;
-                        backdrop-filter: none !important;
-                        border: none !important;
-                        box-shadow: none !important;
-                    }
-                }
-            `}</style>
         </div>
     );
 };
