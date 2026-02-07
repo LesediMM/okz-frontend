@@ -24,12 +24,26 @@ export default {
             let selectedTime = null;
             let userEmail = '';
 
-            // Show email form first
+            // Show email form first - FIXED WITH PROPER VALIDATION
             document.getElementById('verify-email-btn').addEventListener('click', () => {
-                const email = emailInput.value.trim();
+                // Clean email aggressively
+                let email = emailInput.value
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width chars
+                    .replace(/\s+/g, ''); // Remove ALL whitespace
+                
+                console.log('Cleaned email:', email); // Debug logging
                 
                 if (!email) {
                     alert('Please enter your email address');
+                    return;
+                }
+                
+                // Validate email format strictly
+                const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                if (!emailRegex.test(email)) {
+                    alert('Please enter a valid email address\nExample: name@domain.com');
                     return;
                 }
 
@@ -108,6 +122,11 @@ export default {
                 };
 
                 bookButton.onclick = async () => {
+                    // Debug: log what email is being sent
+                    console.log('=== Booking Debug ===');
+                    console.log('Email to send:', userEmail);
+                    console.log('Email validation:', /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(userEmail));
+                    
                     const bookingData = {
                         courtType: typeSelect.value,
                         courtNumber: Number(courtSelect.value),
@@ -125,6 +144,8 @@ export default {
                     bookButton.disabled = true;
 
                     try {
+                        console.log('Sending booking request with email:', userEmail);
+                        
                         const res = await fetch('https://okz.onrender.com/api/v1/bookings', {
                             method: 'POST',
                             headers: { 
@@ -137,6 +158,7 @@ export default {
                         });
 
                         const responseData = await res.json();
+                        console.log('Backend response:', responseData);
                         
                         if (res.ok) { 
                             alert("Court reserved successfully!"); 
@@ -150,6 +172,7 @@ export default {
                             bookButton.disabled = false;
                         }
                     } catch (e) { 
+                        console.error('Network error:', e);
                         alert("Network error."); 
                         bookButton.innerText = "BOOK NOW";
                         bookButton.disabled = false;
