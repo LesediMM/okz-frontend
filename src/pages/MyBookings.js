@@ -52,19 +52,18 @@ export default {
             container.innerHTML = '<p class="loading">Fetching your bookings...</p>';
 
             try {
-                // FIXED: Email is now passed as a query parameter instead of headers
-                const response = await fetch(
-                    `https://okz.onrender.com/api/v1/bookings?email=${encodeURIComponent(userEmail)}`,
-                    {
-                        method: 'GET',
-                        headers: {
-                            'Origin': 'https://okz-frontend.onrender.com',
-                            'Content-Type': 'application/json'
-                        }
+                // FIXED: Use x-user-email header instead of query parameter
+                const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
+                    method: 'GET',
+                    headers: {
+                        'x-user-email': userEmail,  // Email goes in this header
+                        'Content-Type': 'application/json',
+                        'Origin': 'https://okz-frontend.onrender.com'
                     }
-                );
+                });
 
                 const result = await response.json();
+                console.log('Bookings API Response:', result); // For debugging
 
                 if (response.ok && result.status === 'success') {
                     const bookings = result.data.bookings;
