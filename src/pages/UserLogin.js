@@ -1,9 +1,7 @@
 /**
  * src/pages/UserLogin.js
- * User Authentication Page
+ * User Authentication Page - Simplified (No external API imports)
  */
-
-import { authApi } from '../api/auth.js';
 
 export default {
     render: () => `
@@ -46,30 +44,41 @@ export default {
             btn.innerText = 'Authenticating...';
 
             const credentials = {
-                email: form.email.value.trim(),
-                password: form.password.value
+                email: document.getElementById('email').value.trim(),
+                password: document.getElementById('password').value
             };
 
             try {
-                // 2. Call Auth API
-                const res = await authApi.login(credentials);
+                // 2. Call Auth API directly using fetch
+                const response = await fetch('https://okz.onrender.com/api/v1/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(credentials)
+                });
 
-                if (res.status === 'success') {
+                const res = await response.json();
+
+                if (response.ok && res.status === 'success') {
                     // 3. Store Auth Data
-                    // Expecting backend to return { data: { token: "...", user: {...} } }
                     localStorage.setItem('accessToken', res.data.token);
                     localStorage.setItem('user', JSON.stringify(res.data.user));
 
-                    // 4. Redirect to Dashboard or Booking page
-                    window.location.hash = '#/booking'; 
+                    // 4. Redirect to Booking page
+                    window.location.hash = '#/booking';
+                    
+                    // Force a reload to update the Navbar in app.js
+                    window.location.reload();
                 } else {
-                    // Handle "Invalid credentials" or other 400/401 errors
+                    // Handle "Invalid credentials" or other errors
                     alert(res.message || 'Login failed. Please check your email and password.');
                     btn.disabled = false;
                     btn.innerText = 'Login';
                 }
             } catch (err) {
-                alert('An unexpected error occurred. Please try again later.');
+                console.error('Login error:', err);
+                alert('An unexpected error occurred. Please check your internet connection and try again.');
                 btn.disabled = false;
                 btn.innerText = 'Login';
             }

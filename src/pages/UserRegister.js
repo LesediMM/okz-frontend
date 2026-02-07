@@ -1,9 +1,7 @@
 /**
  * src/pages/UserRegister.js
- * User Registration Page
+ * User Registration Page - Simplified (No external API imports)
  */
-
-import { authApi } from '../api/auth.js';
 
 export default {
     render: () => `
@@ -26,7 +24,7 @@ export default {
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Min. 6 characters" required>
+                    <input type="password" id="password" name="password" placeholder="Min. 6 chars (1 Upper, 1 Lower, 1 Number)" required>
                 </div>
 
                 <div class="form-group">
@@ -56,26 +54,35 @@ export default {
 
             // 2. Extract data directly from form elements
             const userData = {
-                fullName: form.fullName.value.trim(),
-                email: form.email.value.trim(),
-                password: form.password.value,
-                phoneNumber: form.phoneNumber.value.trim()
+                fullName: document.getElementById('fullName').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                password: document.getElementById('password').value,
+                phoneNumber: document.getElementById('phoneNumber').value.trim()
             };
 
-            // 3. Call the API
+            // 3. Call the API directly using fetch
             try {
-                const res = await authApi.register(userData);
+                const response = await fetch('https://okz.onrender.com/api/v1/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
 
-                if (res.status === 'success') {
+                const res = await response.json();
+
+                if (response.ok && res.status === 'success') {
                     alert('Registration successful! Redirecting to login...');
                     window.location.hash = '#/login';
                 } else {
-                    // This catches the 400 error message (like "Email already exists")
+                    // This catches backend validation errors (regex, existing email, etc.)
                     alert(res.message || 'Registration failed. Please check your details.');
                     btn.disabled = false;
                     btn.innerText = 'Register';
                 }
             } catch (err) {
+                console.error('Registration error:', err);
                 alert('A network error occurred. Please try again.');
                 btn.disabled = false;
                 btn.innerText = 'Register';
