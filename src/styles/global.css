@@ -4,6 +4,7 @@
     --brand-sky: #A2C2E8;
     --system-blue: #007AFF;
     --system-red: #FF3B30;
+    --system-green: #34C759;
     --text-main: #1C1C1E;
     --text-muted: #636366;
     
@@ -37,17 +38,7 @@
     100% { background-position: 0% 50%; }
   }
   
-  /* Core Glassmorphism Component */
-  .glass-panel {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--blur)) saturate(180%);
-    -webkit-backdrop-filter: blur(var(--blur)) saturate(180%);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    box-shadow: var(--glass-shadow);
-  }
-  
-  /* --- Navigation Shell Styles --- */
+  /* --- Navigation Shell --- */
   .navbar {
     background: rgba(255, 255, 255, 0.4) !important;
     backdrop-filter: blur(25px) saturate(180%);
@@ -81,11 +72,7 @@
   
   .brand-dot { color: var(--system-blue); }
   
-  .nav-links {
-    display: flex;
-    gap: 24px;
-    align-items: center;
-  }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
   
   .nav-item {
     text-decoration: none;
@@ -95,28 +82,14 @@
     transition: opacity 0.2s;
   }
   
-  .nav-item:hover { opacity: 0.6; }
-  
   .nav-cta-pill {
     background: var(--brand-navy);
     color: white !important;
-    padding: 8px 16px;
+    padding: 8px 18px;
     border-radius: 50px;
     font-size: 0.8rem !important;
     text-decoration: none;
   }
-  
-  .logout-link {
-    background: transparent;
-    border: none;
-    color: var(--system-red);
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
-  
-  .logout-link:hover { opacity: 0.7; }
   
   .nav-profile-circle {
     width: 32px;
@@ -132,27 +105,67 @@
     box-shadow: 0 4px 10px rgba(26, 43, 86, 0.15);
   }
   
-  .content-viewport {
-    min-height: calc(100vh - 64px);
+  /* --- Universal Component Classes --- */
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--blur)) saturate(180%);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: var(--glass-shadow);
   }
   
-  /* --- Universal Components --- */
   .btn-primary {
     background: var(--brand-navy) !important;
     color: white !important;
     border: none;
     border-radius: 14px;
     font-weight: 700;
+    padding: 12px 24px;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .btn-primary:active { transform: scale(0.96); opacity: 0.9; }
   
-  .apple-fade-in {
-    animation: fadeIn 0.6s ease-out;
+  /* --- Global Form Elements (Apple Style) --- */
+  input, select {
+    font-size: 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 12px;
+    transition: all 0.2s;
   }
   
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--system-blue);
+    background: #fff;
+  }
+  
+  label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: block;
+  }
+  
+  /* --- Status Colors --- */
+  .status-pill {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 4px 12px;
+    border-radius: 50px;
+    text-transform: uppercase;
+  }
+  .status-confirmed { background: rgba(52, 199, 89, 0.15); color: var(--system-green); }
+  .status-pending { background: rgba(0, 122, 255, 0.1); color: var(--system-blue); }
+  .status-cancelled { background: rgba(255, 59, 48, 0.1); color: var(--system-red); }
+  
+  .apple-fade-in { animation: fadeIn 0.6s ease-out; }
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }

@@ -37,7 +37,7 @@ const Booking = ({ user }) => {
 
     const handleBooking = async () => {
         if (!user) { navigate('/login'); return; }
-        if (!bookingData.timeSlot) { alert("Please select a time."); return; }
+        if (!bookingData.timeSlot) { return; } // CSS handles the disabled state visually
 
         setIsProcessing(true);
         try {
@@ -62,14 +62,14 @@ const Booking = ({ user }) => {
 
     return (
         <div className="booking-page-container apple-fade-in">
-            <header className="page-header">
+            <header className="page-header" style={{ textAlign: 'center', marginBottom: '3rem' }}>
                 <h1 className="hero-title">Reserve a Court</h1>
-                <p className="text-muted">High-performance Padel and Tennis facilities.</p>
+                <p className="text-muted">Premium Padel and Tennis facilities in Cairo.</p>
             </header>
 
             <div className="booking-layout-grid">
                 {/* --- Step 1: Configuration --- */}
-                <section className="glass-panel config-panel">
+                <section className="glass-panel config-panel" style={{ padding: '30px', marginBottom: '40px' }}>
                     <div className="segmented-control">
                         <button 
                             className={bookingData.courtType === 'paddle' ? 'active' : ''} 
@@ -81,9 +81,9 @@ const Booking = ({ user }) => {
                         >Tennis</button>
                     </div>
 
-                    <div className="form-row">
+                    <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                         <div className="field-group">
-                            <label>DATE</label>
+                            <label style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>DATE</label>
                             <input 
                                 type="date" 
                                 name="date" 
@@ -93,7 +93,7 @@ const Booking = ({ user }) => {
                             />
                         </div>
                         <div className="field-group">
-                            <label>DURATION</label>
+                            <label style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>DURATION</label>
                             <select name="duration" value={bookingData.duration} onChange={handleInputChange}>
                                 <option value="1">1 Hour</option>
                                 <option value="2">2 Hours</option>
@@ -101,8 +101,8 @@ const Booking = ({ user }) => {
                         </div>
                     </div>
 
-                    <div className="field-group">
-                        <label>PREVIEW COURT</label>
+                    <div className="field-group" style={{ marginTop: '10px' }}>
+                        <label style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>PREVIEW COURT</label>
                         <select name="courtNumber" value={bookingData.courtNumber} onChange={handleInputChange}>
                             {courts.map(c => <option key={c.v} value={c.v}>{c.t}</option>)}
                         </select>
@@ -111,7 +111,7 @@ const Booking = ({ user }) => {
 
                 {/* --- Step 2: Time Grid --- */}
                 <section className="time-picker-section">
-                    <h3 className="section-heading">Available Slots</h3>
+                    <h3 className="section-heading" style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '20px', color: 'var(--brand-navy)' }}>Available Slots</h3>
                     <div className="time-pill-grid">
                         {timeSlots.map(time => (
                             <button 
@@ -129,11 +129,11 @@ const Booking = ({ user }) => {
                 <div className="glass-panel floating-checkout-bar">
                     <div className="checkout-flex">
                         <div className="price-display">
-                            <span className="price-label">ESTIMATED TOTAL</span>
+                            <span className="price-label" style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', display: 'block' }}>ESTIMATED TOTAL</span>
                             <span className="price-value">{bookingData.duration * 400} EGP</span>
                         </div>
                         <button 
-                            className={`btn-primary confirm-booking-btn ${!bookingData.timeSlot ? 'disabled' : ''}`}
+                            className={`confirm-booking-btn ${(!bookingData.timeSlot || isProcessing) ? 'disabled' : ''}`}
                             onClick={handleBooking}
                             disabled={isProcessing || !bookingData.timeSlot}
                         >

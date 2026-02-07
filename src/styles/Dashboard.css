@@ -12,13 +12,63 @@
 
 @media (min-width: 1000px) { .dashboard-grid { grid-template-columns: 1fr 1.5fr 1fr; } }
 
-.dashboard-card { padding: 28px; display: flex; flex-direction: column; height: 100%; }
+/* --- Card & Widget Styling --- */
+.dashboard-card { padding: 28px; display: flex; flex-direction: column; height: 100%; position: relative; }
 
 .widget-icon-bg { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 20px; }
 
+/* --- Activity & Stats --- */
 .activity-row { display: flex; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.05); }
 .status-pill { font-size: 0.65rem; font-weight: 800; padding: 4px 10px; border-radius: 50px; background: rgba(26, 43, 86, 0.1); color: var(--brand-navy); }
 
 .apple-stat-list { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
 .stat-row { display: flex; justify-content: space-between; font-size: 0.9rem; }
 .stat-row strong { color: var(--brand-navy); }
+
+/* --- NEW: Action Button Styling --- */
+
+/* "See All" Text Button */
+.see-all-btn {
+  background: transparent;
+  border: none;
+  color: var(--system-blue);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s, opacity 0.2s;
+  text-decoration: none;
+}
+
+.see-all-btn:hover {
+  background: rgba(0, 122, 255, 0.08);
+  opacity: 0.8;
+}
+
+/* "Book Now" Dashboard Button */
+.book-now-btn {
+  margin-top: 24px;
+  background: var(--brand-navy);
+  color: white;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(26, 43, 86, 0.15);
+}
+
+.book-now-btn:hover {
+  background: #253b75; /* Slightly lighter navy */
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(26, 43, 86, 0.2);
+}
+
+.book-now-btn:active {
+  transform: translateY(0);
+  background: var(--brand-navy);
+}

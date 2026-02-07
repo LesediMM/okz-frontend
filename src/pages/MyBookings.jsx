@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import '../styles/MyBookings.css'; // Separation of concerns
+import '../styles/MyBookings.css'; 
 
 const MyBookings = ({ user }) => {
     const navigate = useNavigate();
@@ -51,62 +51,70 @@ const MyBookings = ({ user }) => {
 
     return (
         <div className="bookings-page-container apple-fade-in">
-            <header className="page-header">
-                <Link to="/dashboard" className="back-link">← Dashboard</Link>
-                <h1 className="hero-title">My Reservations</h1>
-                <p className="text-muted">Manage your schedule and history.</p>
+            <header className="page-header" style={{ marginBottom: '2.5rem' }}>
+                <Link to="/dashboard" className="see-all-btn" style={{ textDecoration: 'none', marginBottom: '1rem', display: 'inline-block' }}>
+                    ← Dashboard
+                </Link>
+                <h1 className="hero-title" style={{ fontSize: '2.5rem' }}>My Reservations</h1>
+                <p className="text-muted">Manage your schedule and match history.</p>
             </header>
 
             {loading && (
-                <div className="loader-container">
-                    <p className="loading-text">Refreshing court data...</p>
+                <div className="loader-container" style={{ textAlign: 'center', padding: '3rem' }}>
+                    <p className="text-muted">Fetching your tickets...</p>
                 </div>
             )}
             
-            {error && <div className="glass-panel error-alert">{error}</div>}
+            {error && <div className="glass-panel" style={{ padding: '20px', color: 'var(--system-red)', textAlign: 'center' }}>{error}</div>}
 
             {!loading && user && (
                 <div className="bookings-stack">
                     {bookings.length > 0 ? (
                         bookings.map((b) => (
                             <div key={b._id} className={`glass-panel ticket-card ${b.status === 'cancelled' ? 'ticket-cancelled' : ''}`}>
+                                {/* Main part of the ticket */}
                                 <div className="ticket-main">
-                                    <div className="sport-tag">
-                                        <span className={`status-dot ${b.courtType.toLowerCase()}`}></span>
-                                        {b.courtType.toUpperCase()}
+                                    <div className="sport-tag" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                                        <div className={`status-pill`} style={{ fontSize: '0.6rem', padding: '2px 8px' }}>
+                                            {b.courtType.toUpperCase()}
+                                        </div>
                                     </div>
                                     <h3 className="court-title">Court {b.courtNumber}</h3>
-                                    <div className="ticket-details">
+                                    <div className="ticket-details" style={{ display: 'flex', gap: '24px', marginTop: 'auto' }}>
                                         <div className="detail-item">
-                                            <span className="label">DATE</span>
-                                            <span className="val">{formatDate(b.date)}</span>
+                                            <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>DATE</span>
+                                            <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{formatDate(b.date)}</span>
                                         </div>
                                         <div className="detail-item">
-                                            <span className="label">TIME</span>
-                                            <span className="val">{b.timeSlot}</span>
+                                            <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>TIME</span>
+                                            <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{b.timeSlot}</span>
                                         </div>
                                     </div>
                                 </div>
                                 
+                                {/* The "Perforation" line styled in MyBookings.css */}
                                 <div className="ticket-divider"></div>
 
+                                {/* The Stub / Price & Status section */}
                                 <div className="ticket-stub">
-                                    <span className={`status-pill status-${b.status.toLowerCase()}`}>
+                                    <span className={`status-pill`}>
                                         {b.status}
                                     </span>
-                                    <div className="price-tag">{b.totalPrice} EGP</div>
+                                    <div className="price-tag">{b.totalPrice || (b.duration * 400)} EGP</div>
                                     {b.paymentStatus === 'pending' && b.status !== 'cancelled' && (
-                                        <span className="pay-warning">Unpaid</span>
+                                        <span style={{ fontSize: '0.65rem', color: 'var(--system-red)', fontWeight: '800', marginTop: '5px' }}>
+                                            UNPAID
+                                        </span>
                                     )}
                                 </div>
                             </div>
                         ))
                     ) : (
-                        <div className="glass-panel empty-state">
-                            <div className="empty-icon">🎾</div>
+                        <div className="glass-panel empty-state" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+                            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎾</div>
                             <h3>No sessions yet</h3>
-                            <p>Your reserved courts will appear here as tickets.</p>
-                            <button onClick={() => navigate('/booking')} className="btn-primary" style={{marginTop: '20px'}}>
+                            <p className="text-muted">Your reserved courts will appear here as tickets.</p>
+                            <button onClick={() => navigate('/booking')} className="book-now-btn" style={{ maxWidth: '200px', margin: '20px auto' }}>
                                 Find a Court
                             </button>
                         </div>

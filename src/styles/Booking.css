@@ -1,5 +1,6 @@
 .booking-page-container { max-width: 1000px; margin: 40px auto; padding: 0 24px 140px; }
 
+/* --- Segmented Court Type Selector --- */
 .segmented-control {
   display: flex;
   background: rgba(26, 43, 86, 0.05);
@@ -9,11 +10,44 @@
 }
 
 .segmented-control button {
-  flex: 1; padding: 12px; border: none; background: transparent; font-weight: 700; border-radius: 10px; cursor: pointer;
+  flex: 1; padding: 12px; border: none; background: transparent; 
+  font-weight: 700; border-radius: 10px; cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.segmented-control button.active { background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.segmented-control button.active { 
+  background: white; 
+  color: var(--brand-navy);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+}
 
+/* --- Styled Form Inputs (Date, Duration, Court) --- */
+.field-group { margin-bottom: 20px; }
+
+.field-group select, 
+.field-group input[type="date"] {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--brand-navy);
+  cursor: pointer;
+  appearance: none; /* Removes default OS styling */
+  transition: all 0.2s ease;
+}
+
+.field-group select:focus, 
+.field-group input[type="date"]:focus {
+  outline: none;
+  background: white;
+  border-color: var(--system-blue);
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+}
+
+/* --- Time Slot Selection --- */
 .time-pill-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -28,10 +62,19 @@
   border-radius: 16px;
   font-weight: 700;
   cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.time-pill.selected { background: var(--brand-navy); color: white; transform: translateY(-4px); }
+.time-pill:hover { background: rgba(255, 255, 255, 0.9); }
 
+.time-pill.selected { 
+  background: var(--brand-navy); 
+  color: white; 
+  transform: translateY(-4px); 
+  box-shadow: 0 8px 20px rgba(26, 43, 86, 0.2);
+}
+
+/* --- Floating Checkout Bar & Action Button --- */
 .floating-checkout-bar {
   position: fixed;
   bottom: 30px;
@@ -40,7 +83,33 @@
   width: 90%;
   max-width: 550px;
   padding: 20px 30px !important;
+  z-index: 1000;
 }
 
 .checkout-flex { display: flex; justify-content: space-between; align-items: center; }
+
 .price-value { font-size: 1.6rem; font-weight: 800; color: var(--brand-navy); }
+
+.confirm-booking-btn {
+  background: var(--brand-navy);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(26, 43, 86, 0.2);
+}
+
+.confirm-booking-btn:hover {
+  background: #253b75;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(26, 43, 86, 0.3);
+}
+
+.confirm-booking-btn.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
