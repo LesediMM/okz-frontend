@@ -1,10 +1,7 @@
 /**
  * src/router.js
- * Router for OKZ Sports Frontend
+ * SIMPLIFIED ROUTER - Basic navigation
  */
-
-// Import App from same directory
-import App from './app.js';
 
 // Import all page components from pages directory
 import Home from './pages/Home.js';
@@ -13,34 +10,27 @@ import UserRegister from './pages/UserRegister.js';
 import Booking from './pages/Booking.js';
 import MyBookings from './pages/MyBookings.js';
 import UserDashboard from './pages/UserDashboard.js';
-import AdminLogin from './pages/AdminLogin.js';
-import AdminDashboard from './pages/AdminDashboard.js';
-import AdminBookings from './pages/AdminBookings.js';
 
-// Route definitions
+// Simple route definitions
 const routes = {
     '/': Home,
     '/login': UserLogin,
     '/register': UserRegister,
     '/booking': Booking,
     '/my-bookings': MyBookings,
-    '/dashboard': UserDashboard,
-    '/admin/login': AdminLogin,
-    '/admin/dashboard': AdminDashboard,
-    '/admin/bookings': AdminBookings
+    '/dashboard': UserDashboard
 };
 
-// Protected routes require authentication
-const protectedRoutes = ['/booking', '/my-bookings', '/dashboard'];
+// Simple authentication check
+function isLoggedIn() {
+    return !!localStorage.getItem('okz_user_id');
+}
 
-// Admin routes require admin role
-const adminRoutes = ['/admin/dashboard', '/admin/bookings'];
-
-// Main router function
+// Main router function - SIMPLIFIED
 export const router = async () => {
-    const appContainer = document.getElementById('app');
+    const app = document.getElementById('app');
     
-    if (!appContainer) {
+    if (!app) {
         console.error('App container not found!');
         return;
     }
@@ -51,64 +41,45 @@ export const router = async () => {
         path = '/' + path;
     }
 
-    // 2. Initialize app state (reads from localStorage)
-    await App.init();
-
-    // 3. Navigation guards
-    // Redirect to login if accessing protected route without authentication
-    if (protectedRoutes.includes(path) && !App.state.isAuthenticated) {
+    // 2. SIMPLE NAVIGATION GUARD
+    // Redirect to login if trying to access booking pages without being logged in
+    if (['/booking', '/my-bookings', '/dashboard'].includes(path) && !isLoggedIn()) {
         window.location.hash = '#/login';
         return;
     }
 
-    // Redirect to admin login if accessing admin route without admin role
-    if (adminRoutes.includes(path)) {
-        const isAdmin = App.state.user?.role === 'admin';
-        if (!isAdmin) {
-            window.location.hash = '#/admin/login';
-            return;
-        }
-    }
-
-    // 4. Get the page component for the current route
+    // 3. Get the page component
     const page = routes[path] || Home;
 
     try {
-        // Render the page
-        const pageHTML = await page.render();
-        
-        // Wrap page in layout and insert into DOM
-        appContainer.innerHTML = App.renderLayout(pageHTML);
+        // Render the page directly (no layout wrapper)
+        app.innerHTML = await page.render();
 
-        // Attach layout events (like logout button)
-        App.attachLayoutEvents();
-
-        // Run page-specific JavaScript (if any)
+        // Run page-specific JavaScript
         if (page.afterRender) {
             await page.afterRender();
         }
 
-        // Scroll to top on route change
+        // Scroll to top
         window.scrollTo(0, 0);
         
     } catch (error) {
         console.error('Routing Error:', error);
         
-        // Show error page
-        appContainer.innerHTML = App.renderLayout(`
-            <div class="error-page" style="text-align:center; padding: 50px;">
+        // Show simple error page
+        app.innerHTML = `
+            <div style="text-align:center; padding: 50px;">
                 <h1>Page Error</h1>
                 <p>Could not load the requested page.</p>
-                <p><small>${error.message}</small></p>
-                <a href="#/" class="btn btn-primary">Return Home</a>
+                <a href="#/" style="color:#27ae60;">Go Home</a>
             </div>
-        `);
+        `;
     }
 };
 
-// Set up event listeners for routing
+// Set up event listeners
 window.addEventListener('hashchange', router);
 window.addEventListener('load', router);
 
-// Export router for manual navigation if needed
-export default router;
+// Start the router
+router();

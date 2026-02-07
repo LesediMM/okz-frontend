@@ -1,33 +1,34 @@
 /**
  * src/pages/UserLogin.js
- * Force-Navigation Version - Fixed
+ * BASIC VERSION - Simple navigation
  */
-import App from '../app.js';
 
 export default {
     render: () => `
         <div class="auth-page">
-            <div class="auth-header">
-                <h2>Welcome Back</h2>
-                <p>Login to manage your OKZ Sports bookings</p>
-            </div>
+            <nav class="simple-nav">
+                <a href="#/">← Back to Home</a>
+            </nav>
             
-            <form id="login-form" class="auth-form">
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" placeholder="name@example.com" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                </div>
-
-                <button type="submit" id="login-btn" class="btn btn-primary btn-block">Login</button>
-            </form>
-
-            <div class="auth-footer">
-                <p>Don't have an account? <a href="#/register">Register here</a></p>
+            <div class="auth-container">
+                <h2>Login to OKZ Sports</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" placeholder="name@example.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Enter your password" required>
+                    </div>
+                    
+                    <button type="submit" id="login-btn" class="btn btn-primary">Login</button>
+                </form>
+                
+                <p class="auth-footer">
+                    Don't have an account? <a href="#/register">Register here</a>
+                </p>
             </div>
         </div>
     `,
@@ -39,13 +40,12 @@ export default {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            btn.disabled = true;
-            btn.innerText = 'Verifying...';
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
 
-            const credentials = {
-                email: document.getElementById('email').value.trim(),
-                password: document.getElementById('password').value
-            };
+            // Disable button
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
 
             try {
                 const response = await fetch('https://okz.onrender.com/api/v1/login', {
@@ -54,47 +54,36 @@ export default {
                         'Content-Type': 'application/json',
                         'Origin': 'https://okz-frontend.onrender.com'
                     },
-                    body: JSON.stringify(credentials)
+                    body: JSON.stringify({ email, password })
                 });
 
-                const res = await response.json();
-
-                // Check for that 200 OK / Success status
-                if (response.ok && res.status === 'success') {
-                    const userId = res.data?.userId;
-                    const userData = res.data?.user;
-
-                    // 1. Mandatory Data Save
-                    localStorage.setItem('okz_user_id', userId);
-                    localStorage.setItem('user', JSON.stringify(userData));
-                    
-                    // 2. Clear old session data
-                    localStorage.removeItem('accessToken');
-
-                    // 3. Update App state immediately
-                    if (typeof App !== 'undefined' && App.state) {
-                        App.state.isAuthenticated = true;
-                        App.state.user = userData;
+                const data = await response.json();
+                
+                // SIMPLE CHECK: If response is 200 OK
+                if (response.ok) {
+                    // Save user data to localStorage
+                    if (data.data && data.data.userId) {
+                        localStorage.setItem('okz_user_id', data.data.userId);
+                        localStorage.setItem('user', JSON.stringify(data.data.user || {}));
+                        
+                        // Navigate IMMEDIATELY to dashboard
+                        window.location.hash = '#/dashboard';
+                    } else {
+                        alert('Login successful but no user data received.');
+                        btn.disabled = false;
+                        btn.textContent = 'Login';
                     }
-                    
-                    // 4. Navigate WITHOUT reloading
-                    btn.innerText = 'Success! Redirecting...';
-                    
-                    // Give a moment for state to update, then navigate to home
-                    setTimeout(() => {
-                        window.location.hash = '#/';
-                    }, 100);
-                    
                 } else {
-                    alert(res.message || 'Invalid credentials.');
+                    // Show error message
+                    alert(data.message || 'Login failed. Please check your credentials.');
                     btn.disabled = false;
-                    btn.innerText = 'Login';
+                    btn.textContent = 'Login';
                 }
-            } catch (err) {
-                console.error('Force-Nav Login Error:', err);
-                alert('Server unreachable. Is the backend awake?');
+                
+            } catch (error) {
+                alert('Network error. Please check your internet connection.');
                 btn.disabled = false;
-                btn.innerText = 'Login';
+                btn.textContent = 'Login';
             }
         });
     }
