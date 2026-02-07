@@ -1,15 +1,14 @@
 /**
  * src/pages/AdminBookings.js
  * Comprehensive Booking Management for Admins
+ * (Simplified: No external API imports)
  */
-
-import { request } from '../api/index.js';
 
 export default {
     render: async () => {
-        const adminToken = localStorage.getItem('adminToken');
-        if (!adminToken) {
-            window.location.hash = '#/admin/login';
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            window.location.hash = '#/login';
             return '';
         }
 
@@ -54,19 +53,29 @@ export default {
         const statusFilter = document.getElementById('filter-status');
         const refreshBtn = document.getElementById('refresh-list');
         const tableBody = document.getElementById('admin-bookings-body');
+        const token = localStorage.getItem('accessToken');
 
         const fetchAllBookings = async () => {
             try {
-                // Backend endpoint for admin history
-                const res = await request('/admin/bookings/history', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+                // Fetch directly from your backend admin endpoint
+                const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
+                    method: 'GET',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
 
-                if (res.status === 'success') {
+                const res = await response.json();
+
+                if (response.ok && res.status === 'success') {
                     renderTable(res.data.bookings);
+                } else {
+                    throw new Error(res.message);
                 }
             } catch (error) {
-                tableBody.innerHTML = `<tr><td colspan="7" class="error">Failed to load system bookings.</td></tr>`;
+                console.error('Admin Fetch Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="7" class="error">Failed to load system bookings. Check admin permissions.</td></tr>`;
             }
         };
 
@@ -83,23 +92,23 @@ export default {
                 <tr>
                     <td>
                         <div class="date-cell">
-                            <strong>${b.date}</strong>
+                            <strong>${new Date(b.date).toLocaleDateString()}</strong>
                             <span>${b.timeSlot}</span>
                         </div>
                     </td>
-                    <td>${b.userEmail || 'Guest'}</td>
+                    <td>${b.user?.email || 'N/A'}</td>
                     <td>Court ${b.courtNumber}</td>
-                    <td><span class="type-tag ${b.courtType}">${b.courtType}</span></td>
-                    <td><span class="status-badge status-${b.status}">${b.status}</span></td>
-                    <td>400 EGP</td>
+                    <td><span class="type-tag">${b.courtNumber <= 2 ? 'Paddle' : 'Tennis'}</span></td>
+                    <td><span class="status-badge status-${b.status}">${b.status.toUpperCase()}</span></td>
+                    <td>${b.price * b.duration} EGP</td>
                     <td>
-                        <button class="btn-sm" onclick="alert('Manage Booking ${b._id}')">Details</button>
+                        <button class="btn-sm" onclick="alert('Managing Booking: ${b._id}')">View</button>
                     </td>
                 </tr>
             `).join('');
         };
 
-        statusFilter.addEventListener('change', fetchAllBookings);
+        statusFilter.addEventListener('change', () => fetchAllBookings());
         refreshBtn.addEventListener('click', fetchAllBookings);
         
         // Initial Load
