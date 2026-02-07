@@ -1,8 +1,8 @@
 /**
  * src/pages/UserLogin.js
- * User Authentication Page - Fixed for SPA State Sync
+ * Force-Navigation Version
  */
-import App from '../app.js'; // Ensure this path correctly points to your app.js
+import App from '../app.js';
 
 export default {
     render: () => `
@@ -40,7 +40,7 @@ export default {
             e.preventDefault();
 
             btn.disabled = true;
-            btn.innerText = 'Authenticating...';
+            btn.innerText = 'Verifying...';
 
             const credentials = {
                 email: document.getElementById('email').value.trim(),
@@ -59,36 +59,34 @@ export default {
 
                 const res = await response.json();
 
+                // Check for that 200 OK / Success status
                 if (response.ok && res.status === 'success') {
                     const userId = res.data?.userId;
                     const userData = res.data?.user;
 
-                    if (!userId) {
-                        throw new Error('User ID missing from server response');
-                    }
-
-                    // 1. Update LocalStorage
+                    // 1. Mandatory Data Save
                     localStorage.setItem('okz_user_id', userId);
                     localStorage.setItem('user', JSON.stringify(userData));
+                    
+                    // 2. Clear old session data
                     localStorage.removeItem('accessToken');
 
-                    // 2. Update Global App State immediately
-                    // This ensures the Navbar changes to "Logout" without a reload
-                    App.state.isAuthenticated = true;
-                    App.state.user = userData;
-
-                    // 3. Redirect
-                    // The hashchange event listener in main.js/router.js will now fire
+                    // 3. FORCE NAVIGATE
+                    // We set the hash and then immediately force a hard reload.
+                    // This guarantees the Router and App.js re-read the LocalStorage.
+                    btn.innerText = 'Success! Redirecting...';
+                    
                     window.location.hash = '#/dashboard';
+                    window.location.reload(); 
                     
                 } else {
-                    alert(res.message || 'Login failed. Please check your credentials.');
+                    alert(res.message || 'Invalid credentials.');
                     btn.disabled = false;
                     btn.innerText = 'Login';
                 }
             } catch (err) {
-                console.error('Login error:', err);
-                alert('Connection error. Please check your backend.');
+                console.error('Force-Nav Login Error:', err);
+                alert('Server unreachable. Is the backend awake?');
                 btn.disabled = false;
                 btn.innerText = 'Login';
             }
