@@ -8,14 +8,20 @@ const UserDashboard = ({ user }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Defensive: Wait for auth state to settle before forcing redirect
         if (!user) {
-            navigate('/login');
-            return;
+            const authTimeout = setTimeout(() => {
+                if (!user) navigate('/login');
+            }, 800);
+            return () => clearTimeout(authTimeout);
         }
         fetchDashboardData();
     }, [user, navigate]);
 
     const fetchDashboardData = async () => {
+        // Guard against calling API without a valid user email
+        if (!user?.email) return;
+
         try {
             const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
                 method: 'GET',
@@ -26,8 +32,9 @@ const UserDashboard = ({ user }) => {
             });
             const res = await response.json();
             if (response.ok && res.status === 'success') {
-                // Keep only the 3 most recent bookings for the mini-feed
-                setRecentBookings(res.data.bookings.slice(0, 3));
+                // Null-safe access to the nested data structure
+                const bookings = res?.data?.bookings || [];
+                setRecentBookings(bookings.slice(0, 3));
             }
         } catch (error) {
             console.error('Dashboard Activity Error:', error);
@@ -36,27 +43,40 @@ const UserDashboard = ({ user }) => {
         }
     };
 
-    if (!user) return null;
+    /**
+     * Safe Property Access Logic
+     * Prevents "Cannot read property of null" during the render cycle.
+     */
+    const firstName = user?.fullName ? user.fullName.split(' ')[0] : 'Player';
+    const userInitial = user?.fullName?.charAt(0).toUpperCase() || 'U';
+    const today = new Date().toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric' 
+    });
 
-    // Format greeting name (first name only)
-    const firstName = user.fullName ? user.fullName.split(' ')[0] : 'Player';
+    // If user is null, show a graceful loading state instead of crashing
+    if (!user) {
+        return (
+            <div className="loader-container apple-fade-in" style={{ textAlign: 'center', marginTop: '20vh' }}>
+                <div className="loader"></div>
+                <p className="text-muted">Authenticating session...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="dashboard-container apple-fade-in">
             {/* --- Branded Header --- */}
             <header className="dashboard-header">
                 <div className="greeting-group">
-                    <span className="date-label">
-                        {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </span>
+                    <span className="date-label">{today}</span>
                     <h1 className="hero-title">Hello, {firstName}</h1>
                 </div>
                 <div className="nav-profile-circle">
-                    {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+                    {userInitial}
                 </div>
             </header>
-
-            
 
             <div className="dashboard-grid">
                 {/* --- Quick Action: Reserve (Primary) --- */}
@@ -83,16 +103,19 @@ const UserDashboard = ({ user }) => {
                     ) : recentBookings.length > 0 ? (
                         <div className="mini-activity-list">
                             {recentBookings.map((b, index) => (
-                                <div key={b._id || index} className="activity-row">
+                                <div key={b?._id || index} className="activity-row">
                                     <div className="activity-info">
                                         <span className="activity-title">
-                                            {b.courtType.charAt(0).toUpperCase() + b.courtType.slice(1)} (C{b.courtNumber})
+                                            {/* Safe access to court properties */}
+                                            {(b?.courtType || 'Court').charAt(0).toUpperCase() + (b?.courtType || '').slice(1)} (C{b?.courtNumber || '?'})
                                         </span>
                                         <span className="activity-time">
-                                            {new Date(b.date).toLocaleDateString()} • {b.timeSlot}
+                                            {b?.date ? new Date(b.date).toLocaleDateString() : 'Pending'} • {b?.timeSlot || '--:--'}
                                         </span>
                                     </div>
-                                    <span className="status-pill">{b.status}</span>
+                                    <span className={`status-pill status-${(b?.status || 'pending').toLowerCase()}`}>
+                                        {b?.status || 'Processing'}
+                                    </span>
                                 </div>
                             ))}
                         </div>

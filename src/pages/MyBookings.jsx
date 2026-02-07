@@ -8,10 +8,15 @@ const MyBookings = ({ user }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    /**
+     * ✅ FIX: useCallback dependency set to user?.email 
+     * This prevents the infinite loop and ensures we only fetch when we have a user identity.
+     */
     const fetchBookings = useCallback(async () => {
-        if (!user) {
-            setLoading(false);
-            return;
+        if (!user?.email) {
+            // Wait slightly for auth to settle, then stop loading if still no user
+            const timeout = setTimeout(() => setLoading(false), 1000);
+            return () => clearTimeout(timeout);
         }
 
         try {
@@ -23,31 +28,58 @@ const MyBookings = ({ user }) => {
                 }
             });
 
+            // Handle non-JSON responses (e.g., server 500 HTML errors)
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new Error("Server returned an invalid response. Please try again later.");
+            }
+
             const result = await response.json();
 
             if (response.ok && result.status === 'success') {
-                setBookings(result.data.bookings || []);
+                // ✅ FIX: Null-safe data mapping
+                setBookings(result?.data?.bookings || []);
             } else {
                 setError(result.message || 'Failed to load bookings.');
             }
         } catch (err) {
-            setError('Unable to connect to server. Please try again.');
+            setError(err.message || 'Unable to connect to server. Please check your connection.');
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, [user?.email]);
 
     useEffect(() => {
         fetchBookings();
     }, [fetchBookings]);
 
+    /**
+     * ✅ FIX: Null-safe date formatting
+     */
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric'
-        });
+        if (!dateString) return "TBD";
+        try {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch (e) {
+            return "Invalid Date";
+        }
     };
+
+    /**
+     * ✅ FIX: Early Return Pattern
+     * Prevents the "White Screen" by showing a clean loader while user state is null.
+     */
+    if (loading && !user) {
+        return (
+            <div className="loader-container apple-fade-in" style={{ textAlign: 'center', marginTop: '20vh' }}>
+                <p className="text-muted">Authenticating your session...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="bookings-page-container apple-fade-in">
@@ -59,49 +91,49 @@ const MyBookings = ({ user }) => {
                 <p className="text-muted">Manage your schedule and match history.</p>
             </header>
 
-            {loading && (
+            {loading ? (
                 <div className="loader-container" style={{ textAlign: 'center', padding: '3rem' }}>
                     <p className="text-muted">Fetching your tickets...</p>
                 </div>
-            )}
-            
-            {error && <div className="glass-panel" style={{ padding: '20px', color: 'var(--system-red)', textAlign: 'center' }}>{error}</div>}
-
-            {!loading && user && (
+            ) : error ? (
+                <div className="glass-panel" style={{ padding: '20px', color: 'var(--system-red)', textAlign: 'center', margin: '20px' }}>
+                    {error}
+                </div>
+            ) : (
                 <div className="bookings-stack">
-                    {bookings.length > 0 ? (
-                        bookings.map((b) => (
-                            <div key={b._id} className={`glass-panel ticket-card ${b.status === 'cancelled' ? 'ticket-cancelled' : ''}`}>
-                                {/* Main part of the ticket */}
+                    {/* ✅ FIX: Safeguard .length check with optional chaining or fallback */}
+                    {(bookings || []).length > 0 ? (
+                        bookings.map((b, index) => (
+                            <div key={b?._id || index} className={`glass-panel ticket-card ${b?.status === 'cancelled' ? 'ticket-cancelled' : ''}`}>
                                 <div className="ticket-main">
                                     <div className="sport-tag" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                                        <div className={`status-pill`} style={{ fontSize: '0.6rem', padding: '2px 8px' }}>
-                                            {b.courtType.toUpperCase()}
+                                        <div className="status-pill" style={{ fontSize: '0.6rem', padding: '2px 8px' }}>
+                                            {(b?.courtType || 'Sport').toUpperCase()}
                                         </div>
                                     </div>
-                                    <h3 className="court-title">Court {b.courtNumber}</h3>
+                                    <h3 className="court-title">Court {b?.courtNumber || '?'}</h3>
                                     <div className="ticket-details" style={{ display: 'flex', gap: '24px', marginTop: 'auto' }}>
                                         <div className="detail-item">
                                             <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>DATE</span>
-                                            <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{formatDate(b.date)}</span>
+                                            <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{formatDate(b?.date)}</span>
                                         </div>
                                         <div className="detail-item">
                                             <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>TIME</span>
-                                            <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{b.timeSlot}</span>
+                                            <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{b?.timeSlot || "--:--"}</span>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                {/* The "Perforation" line styled in MyBookings.css */}
                                 <div className="ticket-divider"></div>
 
-                                {/* The Stub / Price & Status section */}
                                 <div className="ticket-stub">
                                     <span className={`status-pill`}>
-                                        {b.status}
+                                        {b?.status || 'Pending'}
                                     </span>
-                                    <div className="price-tag">{b.totalPrice || (b.duration * 400)} EGP</div>
-                                    {b.paymentStatus === 'pending' && b.status !== 'cancelled' && (
+                                    <div className="price-tag">
+                                        {b?.totalPrice || (b?.duration ? b.duration * 400 : 0)} EGP
+                                    </div>
+                                    {b?.paymentStatus === 'pending' && b?.status !== 'cancelled' && (
                                         <span style={{ fontSize: '0.65rem', color: 'var(--system-red)', fontWeight: '800', marginTop: '5px' }}>
                                             UNPAID
                                         </span>

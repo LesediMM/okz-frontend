@@ -36,26 +36,48 @@ const Booking = ({ user }) => {
     };
 
     const handleBooking = async () => {
-        if (!user) { navigate('/login'); return; }
-        if (!bookingData.timeSlot) { return; } // CSS handles the disabled state visually
+        // 🛡️ Guard 1: Redirect if no user
+        if (!user) { 
+            alert("Please login to reserve a court.");
+            navigate('/login'); 
+            return; 
+        }
 
-        setIsProcessing(true);
+        // 🛡️ Guard 2: The "Data Corruption" Killer (Input Validation)
+        if (!bookingData.timeSlot) {
+            alert("⚠️ Selection Required: Please pick a time slot first!");
+            return; 
+        }
+
+        setIsProcessing(true); // Start Spinner
+
         try {
             const res = await fetch('https://okz.onrender.com/api/v1/bookings', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-user-email': user.email },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    // 🛡️ Guard 3: Safe Property Access
+                    'x-user-email': user?.email 
+                },
                 body: JSON.stringify(bookingData)
             });
 
             const data = await res.json();
+
             if (res.ok) { 
+                // Success case
                 navigate('/my-bookings'); 
             } else { 
-                alert(data.errors ? data.errors[0].message : data.message); 
+                // Handle backend validation errors (e.g., 400 Bad Request)
+                const errorMsg = data.errors ? data.errors[0].message : (data.message || "Slot unavailable");
+                alert(`Booking Failed: ${errorMsg}`); 
             }
         } catch (e) { 
-            alert("Connection error. Please try again."); 
+            // Handle Network failures
+            console.error("Connection Error:", e);
+            alert("Network error. Please check your connection and try again."); 
         } finally { 
+            // 🛡️ Guard 4: The "Loading" Killer (Always reset state)
             setIsProcessing(false); 
         }
     };
@@ -72,10 +94,12 @@ const Booking = ({ user }) => {
                 <section className="glass-panel config-panel" style={{ padding: '30px', marginBottom: '40px' }}>
                     <div className="segmented-control">
                         <button 
+                            type="button"
                             className={bookingData.courtType === 'paddle' ? 'active' : ''} 
                             onClick={() => handleInputChange({ target: { name: 'courtType', value: 'paddle' }})}
                         >Paddle</button>
                         <button 
+                            type="button"
                             className={bookingData.courtType === 'tennis' ? 'active' : ''} 
                             onClick={() => handleInputChange({ target: { name: 'courtType', value: 'tennis' }})}
                         >Tennis</button>
@@ -83,7 +107,7 @@ const Booking = ({ user }) => {
 
                     <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                         <div className="field-group">
-                            <label style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>DATE</label>
+                            <label className="input-label-tiny">DATE</label>
                             <input 
                                 type="date" 
                                 name="date" 
@@ -93,7 +117,7 @@ const Booking = ({ user }) => {
                             />
                         </div>
                         <div className="field-group">
-                            <label style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>DURATION</label>
+                            <label className="input-label-tiny">DURATION</label>
                             <select name="duration" value={bookingData.duration} onChange={handleInputChange}>
                                 <option value="1">1 Hour</option>
                                 <option value="2">2 Hours</option>
@@ -102,7 +126,7 @@ const Booking = ({ user }) => {
                     </div>
 
                     <div className="field-group" style={{ marginTop: '10px' }}>
-                        <label style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>PREVIEW COURT</label>
+                        <label className="input-label-tiny">PREVIEW COURT</label>
                         <select name="courtNumber" value={bookingData.courtNumber} onChange={handleInputChange}>
                             {courts.map(c => <option key={c.v} value={c.v}>{c.t}</option>)}
                         </select>
@@ -111,11 +135,12 @@ const Booking = ({ user }) => {
 
                 {/* --- Step 2: Time Grid --- */}
                 <section className="time-picker-section">
-                    <h3 className="section-heading" style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '20px', color: 'var(--brand-navy)' }}>Available Slots</h3>
+                    <h3 className="section-heading">Available Slots</h3>
                     <div className="time-pill-grid">
                         {timeSlots.map(time => (
                             <button 
                                 key={time}
+                                type="button"
                                 className={`time-pill ${bookingData.timeSlot === time ? 'selected' : ''}`}
                                 onClick={() => setBookingData(prev => ({ ...prev, timeSlot: time }))}
                             >
@@ -125,14 +150,15 @@ const Booking = ({ user }) => {
                     </div>
                 </section>
 
-                {/* --- Step 3: Glass Checkout Bar --- */}
+                {/* --- Step 3: Checkout Bar --- */}
                 <div className="glass-panel floating-checkout-bar">
                     <div className="checkout-flex">
                         <div className="price-display">
-                            <span className="price-label" style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', display: 'block' }}>ESTIMATED TOTAL</span>
+                            <span className="price-label">ESTIMATED TOTAL</span>
                             <span className="price-value">{bookingData.duration * 400} EGP</span>
                         </div>
                         <button 
+                            type="button"
                             className={`confirm-booking-btn ${(!bookingData.timeSlot || isProcessing) ? 'disabled' : ''}`}
                             onClick={handleBooking}
                             disabled={isProcessing || !bookingData.timeSlot}
