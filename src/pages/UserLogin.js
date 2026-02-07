@@ -1,7 +1,8 @@
 /**
  * src/pages/UserLogin.js
- * User Authentication Page - Updated for User ID System
+ * User Authentication Page - Fixed for SPA State Sync
  */
+import App from '../app.js'; // Ensure this path correctly points to your app.js
 
 export default {
     render: () => `
@@ -27,7 +28,6 @@ export default {
 
             <div class="auth-footer">
                 <p>Don't have an account? <a href="#/register">Register here</a></p>
-                <p><a href="#/forgot-password" class="text-muted">Forgot password?</a></p>
             </div>
         </div>
     `,
@@ -60,29 +60,26 @@ export default {
                 const res = await response.json();
 
                 if (response.ok && res.status === 'success') {
-                    /**
-                     * USER ID SYSTEM UPDATE:
-                     * We no longer use tokens. We store the userId directly.
-                     */
-                    const userId = res.data && res.data.userId;
-                    const userData = res.data && res.data.user;
+                    const userId = res.data?.userId;
+                    const userData = res.data?.user;
 
                     if (!userId) {
                         throw new Error('User ID missing from server response');
                     }
 
-                    // 1. Store ID for API authentication headers
+                    // 1. Update LocalStorage
                     localStorage.setItem('okz_user_id', userId);
-                    
-                    // 2. Store User details for UI display
-                    localStorage.setItem('user', JSON.stringify(userData || { email: credentials.email }));
-
-                    // 3. Clear any old tokens just in case
+                    localStorage.setItem('user', JSON.stringify(userData));
                     localStorage.removeItem('accessToken');
 
-                    // 4. Redirect
-                    window.location.hash = '#/booking';
-                    window.location.reload();
+                    // 2. Update Global App State immediately
+                    // This ensures the Navbar changes to "Logout" without a reload
+                    App.state.isAuthenticated = true;
+                    App.state.user = userData;
+
+                    // 3. Redirect
+                    // The hashchange event listener in main.js/router.js will now fire
+                    window.location.hash = '#/dashboard';
                     
                 } else {
                     alert(res.message || 'Login failed. Please check your credentials.');
@@ -91,7 +88,7 @@ export default {
                 }
             } catch (err) {
                 console.error('Login error:', err);
-                alert('Connection error. Please try again.');
+                alert('Connection error. Please check your backend.');
                 btn.disabled = false;
                 btn.innerText = 'Login';
             }

@@ -1,6 +1,6 @@
 /**
  * src/router.js
- * SPA Hash-based Router for OKZ Sports - Protected Routes Update
+ * FIXED: Syncs App State before rendering to prevent "Stuck" login pages
  */
 
 import App from './app.js';
@@ -14,10 +14,6 @@ import AdminLogin from './pages/AdminLogin.js';
 import AdminDashboard from './pages/AdminDashboard.js';
 import AdminBookings from './pages/AdminBookings.js';
 
-// Define which routes require the user to be logged in (User ID system)
-const protectedRoutes = ['/booking', '/my-bookings', '/dashboard'];
-const adminRoutes = ['/admin/dashboard', '/admin/bookings'];
-
 const routes = {
     '/': Home,
     '/login': UserLogin,
@@ -30,58 +26,76 @@ const routes = {
     '/admin/bookings': AdminBookings
 };
 
+const protectedRoutes = ['/booking', '/my-bookings', '/dashboard'];
+const adminRoutes = ['/admin/dashboard', '/admin/bookings'];
+
 export const router = async () => {
+    const appContainer = document.getElementById('app');
+    
+    // 1. Get current path
     let path = window.location.hash.slice(1).toLowerCase() || '/';
     if (!path.startsWith('/')) path = '/' + path;
 
-    // --- NAVIGATION GUARD ---
+    // 2. CRITICAL FIX: Sync App State with LocalStorage on every route change
+    // This ensures that right after login, App.state.isAuthenticated becomes TRUE
     const userId = localStorage.getItem('okz_user_id');
+    const userJson = localStorage.getItem('user');
     const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
-    // 1. If route is protected and no User ID, redirect to login
-    if (protectedRoutes.includes(path) && !userId) {
+    if (userId && userJson) {
+        App.state.isAuthenticated = true;
+        App.state.user = JSON.parse(userJson);
+    } else {
+        App.state.isAuthenticated = false;
+        App.state.user = null;
+    }
+
+    // 3. NAVIGATION GUARDS
+    // Redirect to login if trying to access protected page while logged out
+    if (protectedRoutes.includes(path) && !App.state.isAuthenticated) {
         window.location.hash = '#/login';
         return;
     }
 
-    // 2. If route is admin and not an admin, redirect to admin login
+    // Redirect to admin login if unauthorized
     if (adminRoutes.includes(path) && !isAdmin) {
         window.location.hash = '#/admin/login';
         return;
     }
 
-    // 3. Find the matching page
+    // 4. FIND AND RENDER PAGE
     const page = routes[path] || Home;
-    const appContainer = document.getElementById('app');
 
     try {
-        // Render inside Layout (Passes current state to Navbar)
+        // Render page inside the layout
         const pageHTML = await page.render();
+        
+        // This now uses the UPDATED App.state we synced in step 2
         appContainer.innerHTML = App.renderLayout(pageHTML);
 
-        // Attach layout events (Logout button)
+        // Re-bind navbar events (like logout)
         if (App.attachLayoutEvents) {
             App.attachLayoutEvents();
         }
 
-        // Execute specific page logic
+        // Run page-specific logic (afterRender)
         if (page.afterRender) {
             await page.afterRender();
         }
 
         window.scrollTo(0, 0);
-
     } catch (error) {
         console.error('Routing Error:', error);
         appContainer.innerHTML = App.renderLayout(`
             <div class="error-page" style="text-align:center; padding: 50px;">
-                <h1>Oops!</h1>
-                <p>Something went wrong while loading this page.</p>
+                <h1>Route Error</h1>
+                <p>Could not load the requested page.</p>
                 <a href="#/">Return Home</a>
             </div>
         `);
     }
 };
 
+// Global Listeners
 window.addEventListener('hashchange', router);
 window.addEventListener('load', router);
