@@ -1,23 +1,24 @@
 /**
  * src/pages/UserDashboard.js
- * Authenticated User Overview
+ * Authenticated User Overview - Simplified (No external API imports)
  */
 
 import App from '../app.js';
-import { bookingApi } from '../api/booking.js';
 
 export default {
     /**
      * Render the Dashboard layout
      */
-    render: async () => {
-        // Redirect to login if not authenticated
-        if (!App.state.isAuthenticated) {
+    render: () => {
+        // 1. Get user from App state or LocalStorage fallback
+        const user = App.state.user || JSON.parse(localStorage.getItem('user') || '{}');
+        const token = localStorage.getItem('accessToken');
+
+        // Redirect to login if no credentials found
+        if (!token) {
             window.location.hash = '#/login';
             return '';
         }
-
-        const user = App.state.user;
 
         return `
             <div class="dashboard-page">
@@ -31,7 +32,7 @@ export default {
                         <h3>Quick Actions</h3>
                         <div class="button-stack">
                             <a href="#/booking" class="btn btn-primary">Book New Court</a>
-                            <a href="#/my-bookings" class="btn">View All Bookings</a>
+                            <a href="#/my-bookings" class="btn btn-secondary">View All Bookings</a>
                         </div>
                     </div>
 
@@ -39,7 +40,7 @@ export default {
                         <h3>Your Profile</h3>
                         <p><strong>Email:</strong> ${user.email}</p>
                         <p><strong>Phone:</strong> ${user.phoneNumber || 'Not provided'}</p>
-                        <p><strong>Status:</strong> <span class="status-badge status-confirmed">Active</span></p>
+                        <p><strong>Status:</strong> <span class="status-badge status-active">Active Member</span></p>
                     </div>
 
                     <div class="card activity-card">
@@ -53,7 +54,7 @@ export default {
                         <h3>Club Info</h3>
                         <ul>
                             <li><strong>Rate:</strong> 400 EGP / Hour</li>
-                            <li><strong>Hours:</strong> 8:00 AM - 10:00 PM</li>
+                            <li><strong>Hours:</strong> 08:00 AM - 10:00 PM</li>
                             <li><strong>Location:</strong> Main Sports Hub</li>
                         </ul>
                     </div>
@@ -66,22 +67,32 @@ export default {
      * Logic to fetch recent bookings after the HTML is injected
      */
     afterRender: async () => {
-        if (!App.state.isAuthenticated) return;
-
         const summaryContainer = document.getElementById('recent-bookings-summary');
-        
-        try {
-            // Call GET /api/v1/bookings with a limit of 3 for the summary
-            const response = await bookingApi.getUserBookings();
+        const token = localStorage.getItem('accessToken');
 
-            if (response.status === 'success' && response.data.bookings.length > 0) {
-                const latest = response.data.bookings.slice(0, 3);
+        if (!token) return;
+
+        try {
+            // 2. Fetch directly from the backend
+            const response = await fetch('https://okz.onrender.com/api/v1/bookings/my-bookings', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const res = await response.json();
+
+            if (response.ok && res.status === 'success' && res.data.bookings.length > 0) {
+                // Show only the 3 most recent bookings
+                const latest = res.data.bookings.slice(0, 3);
                 summaryContainer.innerHTML = `
                     <ul class="mini-booking-list">
                         ${latest.map(b => `
                             <li>
-                                <strong>${b.courtType.toUpperCase()} #${b.courtNumber}</strong>
-                                <span>${b.date} at ${b.timeSlot}</span>
+                                <strong>${b.courtNumber <= 2 ? 'PADDLE' : 'TENNIS'} Court ${b.courtNumber}</strong>
+                                <span>${new Date(b.date).toLocaleDateString()} at ${b.timeSlot}</span>
                             </li>
                         `).join('')}
                     </ul>
