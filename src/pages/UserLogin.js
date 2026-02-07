@@ -1,9 +1,7 @@
 /**
  * src/pages/UserLogin.js
- * MANUAL ROUTING VERSION - Direct component injection
- * ULTRA-SIMPLE 200 OK NAVIGATION
+ * MANUAL ROUTING VERSION - Fixed to save user data before navigation
  */
-
 import UserDashboard from './UserDashboard.js';
 import Home from './Home.js';
 import UserRegister from './UserRegister.js';
@@ -56,7 +54,7 @@ export default {
             if (UserRegister.afterRender) UserRegister.afterRender();
         });
 
-        // --- FORM SUBMISSION LOGIC ---
+        // --- FIXED FORM SUBMISSION LOGIC ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -76,10 +74,40 @@ export default {
                     body: JSON.stringify({ email, password })
                 });
 
-                // --- ULTRA SIMPLE NAVIGATION ---
-                // ONLY REQUIRE 200 OK TO GO TO DASHBOARD
-                if (response.ok) {
+                // --- FIX: PARSE RESPONSE AND SAVE USER DATA ---
+                const result = await response.json();
+                console.log('Login API response:', result);
+
+                if (response.ok && result.status === 'success') {
+                    
+                    // ✅ CRITICAL: SAVE USER DATA BEFORE NAVIGATION
+                    // Save the user ID from API response
+                    if (result.data && result.data.userId) {
+                        localStorage.setItem('okz_user_id', result.data.userId);
+                        console.log('Saved userId:', result.data.userId);
+                    }
+                    
+                    // Save the full user object from API response
+                    if (result.data && result.data.user) {
+                        localStorage.setItem('user', JSON.stringify(result.data.user));
+                        console.log('Saved user:', result.data.user);
+                    }
+                    
+                    // Also update App.state if possible
+                    try {
+                        const AppModule = await import('../app.js');
+                        const App = AppModule.default;
+                        App.state.user = result.data.user;
+                        App.state.isAuthenticated = true;
+                        console.log('Updated App.state');
+                    } catch (err) {
+                        console.log('Note: Could not update App.state, continuing anyway');
+                    }
+                    
+                    // ✅ NOW navigate to Dashboard with saved data
+                    console.log('Navigating to Dashboard...');
                     appContainer.innerHTML = UserDashboard.render();
+                    
                     if (UserDashboard.afterRender) {
                         try {
                             await UserDashboard.afterRender();
@@ -87,9 +115,11 @@ export default {
                             console.error('Dashboard afterRender error:', err);
                         }
                     }
+                    
                 } else {
-                    // Optional: simple alert for failed login
-                    alert('Login failed. Please check your credentials.');
+                    // Handle API error (even with 200 status)
+                    const errorMessage = result.message || 'Login failed. Please check your credentials.';
+                    alert(errorMessage);
                     btn.disabled = false;
                     btn.textContent = 'Login';
                 }
