@@ -42,18 +42,27 @@ export default {
                 return;
             }
 
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(userEmail)) {
+                alert('Please enter a valid email address');
+                return;
+            }
+
             container.innerHTML = '<p class="loading">Fetching your bookings...</p>';
 
             try {
-                const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
-                    method: 'GET',
-                    headers: {
-                        'x-user-email': userEmail,
-                        'X-User-Email': userEmail,
-                        'Origin': 'https://okz-frontend.onrender.com',
-                        'Content-Type': 'application/json'
+                // FIXED: Email is now passed as a query parameter instead of headers
+                const response = await fetch(
+                    `https://okz.onrender.com/api/v1/bookings?email=${encodeURIComponent(userEmail)}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Origin': 'https://okz-frontend.onrender.com',
+                            'Content-Type': 'application/json'
+                        }
                     }
-                });
+                );
 
                 const result = await response.json();
 
