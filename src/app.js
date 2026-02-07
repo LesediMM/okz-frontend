@@ -1,9 +1,8 @@
 /**
  * src/app.js
  * Core Application Logic & Global State
+ * Simplified Version (Direct API Calls)
  */
-
-import { authApi } from './api/auth.js';
 
 const App = {
     // Global State
@@ -20,14 +19,23 @@ const App = {
         console.log('OKZ Sports App Initializing...');
         
         const token = localStorage.getItem('accessToken');
+        const savedUser = localStorage.getItem('user');
         
         if (token) {
             try {
-                // Verify token with backend: GET https://okz.onrender.com/api/v1/login/status
-                const response = await authApi.status();
+                // Verify token directly with your backend
+                const response = await fetch('https://okz.onrender.com/api/v1/login/status', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
                 
-                if (response.status === 'success') {
-                    this.state.user = response.data.user;
+                const result = await response.json();
+                
+                if (response.ok && result.status === 'success') {
+                    this.state.user = result.data.user;
                     this.state.isAuthenticated = true;
                     console.log('User authenticated:', this.state.user.email);
                 } else {
@@ -36,14 +44,18 @@ const App = {
                 }
             } catch (error) {
                 console.error('Auth initialization failed:', error);
-                this.handleLogout();
+                // If the server is down, we can still trust localStorage for UI state
+                // or force logout if you want strict security:
+                if (savedUser) {
+                    this.state.user = JSON.parse(savedUser);
+                    this.state.isAuthenticated = true;
+                }
             }
         }
     },
 
     /**
      * Returns a global layout wrapper
-     * This ensures the Navbar is consistent across pages
      */
     renderLayout(content) {
         return `
@@ -55,7 +67,7 @@ const App = {
                         <a href="#/booking">Book Court</a>
                         ${this.state.isAuthenticated 
                             ? `<a href="#/my-bookings">My Bookings</a>
-                               <a href="#/logout" id="logout-btn">Logout</a>`
+                               <button id="logout-btn" class="nav-btn-link">Logout (${this.state.user?.fullName?.split(' ')[0]})</button>`
                             : `<a href="#/login">Login</a>`
                         }
                     </div>
@@ -72,10 +84,11 @@ const App = {
 
     handleLogout() {
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
         this.state.user = null;
         this.state.isAuthenticated = false;
         window.location.hash = '#/login';
+        window.location.reload(); // Refresh to clear state
     }
 };
 
