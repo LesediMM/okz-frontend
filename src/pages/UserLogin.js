@@ -1,6 +1,6 @@
 /**
  * src/pages/UserLogin.js
- * Force-Navigation Version
+ * Force-Navigation Version - Fixed
  */
 import App from '../app.js';
 
@@ -71,13 +71,19 @@ export default {
                     // 2. Clear old session data
                     localStorage.removeItem('accessToken');
 
-                    // 3. FORCE NAVIGATE
-                    // We set the hash and then immediately force a hard reload.
-                    // This guarantees the Router and App.js re-read the LocalStorage.
+                    // 3. Update App state immediately
+                    if (typeof App !== 'undefined' && App.state) {
+                        App.state.isAuthenticated = true;
+                        App.state.user = userData;
+                    }
+                    
+                    // 4. Navigate WITHOUT reloading
                     btn.innerText = 'Success! Redirecting...';
                     
-                    window.location.hash = '#/dashboard';
-                    window.location.reload(); 
+                    // Give a moment for state to update, then navigate to home
+                    setTimeout(() => {
+                        window.location.hash = '#/';
+                    }, 100);
                     
                 } else {
                     alert(res.message || 'Invalid credentials.');
