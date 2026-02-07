@@ -1,7 +1,10 @@
 /**
  * src/pages/MyBookings.js
- * User Booking History Page - Updated for User ID System
+ * User Booking History Page - 100% Manual Routing Version
  */
+
+import UserLogin from './UserLogin.js';
+import Booking from './Booking.js';
 
 export default {
     render: () => `
@@ -18,6 +21,7 @@ export default {
 
     afterRender: async () => {
         const container = document.getElementById('booking-list');
+        const appContainer = document.getElementById('app');
         
         // 1. Get User ID from localStorage
         const userId = localStorage.getItem('okz_user_id');
@@ -25,8 +29,13 @@ export default {
         if (!userId) {
             container.innerHTML = `
                 <div class="auth-notice">
-                    <p>Please <a href="#/login">login</a> to view your court reservations.</p>
+                    <p>Please <button id="mybookings-to-login" class="btn-link">login</button> to view your court reservations.</p>
                 </div>`;
+            
+            document.getElementById('mybookings-to-login')?.addEventListener('click', () => {
+                appContainer.innerHTML = UserLogin.render();
+                if (UserLogin.afterRender) UserLogin.afterRender();
+            });
             return;
         }
 
@@ -50,12 +59,18 @@ export default {
                     container.innerHTML = `
                         <div class="empty-state">
                             <p>No bookings found. Ready to hit the court?</p>
-                            <a href="#/booking" class="btn btn-primary">Book a Court Now</a>
+                            <button id="mybookings-to-book" class="btn btn-primary">Book a Court Now</button>
                         </div>`;
+                    
+                    document.getElementById('mybookings-to-book')?.addEventListener('click', () => {
+                        appContainer.innerHTML = Booking.render();
+                        // Booking uses a setTimeout internally in its render, but we call afterRender for consistency
+                        if (Booking.afterRender) Booking.afterRender();
+                    });
                     return;
                 }
 
-                // 3. Render the booking cards using backend data structure
+                // 3. Render the booking cards
                 container.innerHTML = bookings.map(b => `
                     <div class="booking-card">
                         <div class="booking-details">

@@ -1,105 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OKZ Sports | Premier Paddle & Tennis</title>
-    <meta name="description" content="Book your paddle and tennis courts at OKZ Sports.">
-    
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-
-    <link rel="stylesheet" href="/src/styles/main.css">
-    <link rel="stylesheet" href="/src/styles/components.css">
-    <link rel="stylesheet" href="/src/styles/pages.css">
-    
-    <style>
-        /* Simple loader styles */
-        .loader-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #27ae60;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
-</head>
 <body>
-    <div id="app">
-        <div class="loader-container">
-            <div class="loader"></div>
-            <p>Loading OKZ Sports...</p>
-        </div>
-    </div>
+    <div id="app"></div>
 
-    <!-- SIMPLE ROUTING SCRIPT -->
     <script type="module">
-        // Import all page components
         import Home from '/src/pages/Home.js';
-        import UserLogin from '/src/pages/UserLogin.js';
-        import UserRegister from '/src/pages/UserRegister.js';
-        import UserDashboard from '/src/pages/UserDashboard.js';
-        import Booking from '/src/pages/Booking.js';
-        import MyBookings from '/src/pages/MyBookings.js';
 
-        // Simple page mapping
-        const pages = {
-            '/': Home,
-            '/login': UserLogin,
-            '/register': UserRegister,
-            '/dashboard': UserDashboard,
-            '/booking': Booking,
-            '/my-bookings': MyBookings
-        };
-
-        // Function to load and render page
-        async function loadPage() {
+        // Entry point: Simply load the Home page on startup
+        window.addEventListener('load', async () => {
             const app = document.getElementById('app');
-            const hash = window.location.hash.slice(1) || '/';
-            
-            try {
-                // Get the page component
-                const page = pages[hash] || Home;
-                
-                // Render the page
-                app.innerHTML = await page.render();
-                
-                // Run page-specific logic
-                if (page.afterRender) {
-                    await page.afterRender();
-                }
-                
-            } catch (error) {
-                console.error('Page load error:', error);
-                app.innerHTML = `
-                    <div style="text-align:center; padding: 50px;">
-                        <h1>Error Loading Page</h1>
-                        <p>${error.message}</p>
-                        <a href="#/" style="color:#27ae60;">Go Home</a>
-                    </div>
-                `;
-            }
-        }
-
-        // Load page on hash change or page load
-        window.addEventListener('hashchange', loadPage);
-        window.addEventListener('load', loadPage);
-
-        // Initialize to home if no hash
-        if (!window.location.hash) {
-            window.location.hash = '#/';
-        }
+            app.innerHTML = await Home.render();
+            if (Home.afterRender) await Home.afterRender();
+        });
     </script>
 </body>
-</html>

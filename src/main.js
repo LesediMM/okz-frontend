@@ -1,44 +1,30 @@
 /**
  * src/main.js
- * Entry point for OKZ Sports Frontend - User ID System Ready
+ * Entry point - MANUAL NAVIGATION VERSION
  */
 
 import App from './app.js';
-import { router } from './router.js';
+import Home from './pages/Home.js';
 
-/**
- * Main Application Bootstrapper
- */
 const initApp = async () => {
-    // 1. Initialize global application state
-    // This checks localStorage for 'okz_user_id' and 'user' data
+    // 1. Initialize state (Checks localStorage for user session)
     await App.init();
 
-    // 2. Initial route handling
-    // Load the correct page based on current hash
-    await router();
+    // 2. Manual Initial Load
+    // We target the main 'app' div directly
+    const root = document.getElementById('app');
+    root.innerHTML = Home.render();
+    if (Home.afterRender) await Home.afterRender();
 
-    // 3. Global Event Listeners
-    
-    // Trigger router whenever the URL hash changes
-    window.addEventListener('hashchange', async () => {
-        await router();
-    });
-
-    /**
-     * LOGOUT DELEGATION
-     * Since the navbar is re-rendered on every route change, 
-     * we attach a single listener to the window to catch logout clicks.
-     */
+    // 3. Global Logout Listener
     window.addEventListener('click', e => {
         if (e.target && e.target.id === 'logout-btn') {
             e.preventDefault();
-            App.handleLogout();
+            App.handleLogout(); // Ensure this function clears localStorage and calls Home.render()
         }
     });
 
-    console.log('OKZ Sports: Bootstrapping complete.');
+    console.log('OKZ Sports: Manual Bootstrapping complete.');
 };
 
-// Start the app
 window.addEventListener('DOMContentLoaded', initApp);

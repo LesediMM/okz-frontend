@@ -1,7 +1,9 @@
 /**
  * src/pages/UserRegister.js
- * User Registration Page - Updated for User ID System
+ * User Registration Page - 100% Manual Routing Version
  */
+
+import UserLogin from './UserLogin.js';
 
 export default {
     render: () => `
@@ -36,7 +38,7 @@ export default {
             </form>
 
             <div class="auth-footer">
-                <p>Already have an account? <a href="#/login">Login here</a></p>
+                <p>Already have an account? <button id="to-login-btn" class="btn-link">Login here</button></p>
             </div>
         </div>
     `,
@@ -44,6 +46,14 @@ export default {
     afterRender: () => {
         const form = document.getElementById('register-form');
         const btn = document.getElementById('reg-btn');
+        const loginRedirectBtn = document.getElementById('to-login-btn');
+        const appContainer = document.getElementById('app');
+
+        // Manual Navigation to Login
+        loginRedirectBtn.addEventListener('click', () => {
+            appContainer.innerHTML = UserLogin.render();
+            if (UserLogin.afterRender) UserLogin.afterRender();
+        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -63,7 +73,6 @@ export default {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        // Explicitly include Origin for live CORS compliance
                         'Origin': 'https://okz-frontend.onrender.com'
                     },
                     body: JSON.stringify(userData)
@@ -72,17 +81,19 @@ export default {
                 const res = await response.json();
 
                 if (response.ok && res.status === 'success') {
-                    // NEW: Store the User ID immediately in localStorage
-                    // This matches the data structure from your successful CURL test
+                    // Store the User ID immediately
                     if (res.data && res.data.user && res.data.user.userId) {
                         localStorage.setItem('okz_user_id', res.data.user.userId);
                         localStorage.setItem('okz_user_email', res.data.user.email);
                     }
 
-                    alert('Registration successful!');
+                    alert('Registration successful! Please login.');
                     
-                    // You can redirect to login, or straight to dashboard since we have the ID
-                    window.location.hash = '#/login';
+                    // --- MANUAL NAVIGATION TO LOGIN ---
+                    appContainer.innerHTML = UserLogin.render();
+                    if (UserLogin.afterRender) {
+                        await UserLogin.afterRender();
+                    }
                 } else {
                     alert(res.message || 'Registration failed.');
                     btn.disabled = false;
@@ -90,7 +101,7 @@ export default {
                 }
             } catch (err) {
                 console.error('Registration error:', err);
-                alert('Connection error. Please ensure the backend is live.');
+                alert('Connection error.');
                 btn.disabled = false;
                 btn.innerText = 'Register';
             }

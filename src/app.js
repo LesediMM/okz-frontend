@@ -1,41 +1,32 @@
 /**
  * src/app.js
- * Core Application Logic & Global State - Updated for User ID System
+ * Core Application Logic & Global State - 100% Manual Routing
  */
 
 const App = {
-    // Global State
     state: {
         user: null,
         isAuthenticated: false,
     },
 
-    /**
-     * Initialize the application state
-     * Checks if the user has a valid ID session on load
-     */
     async init() {
-        console.log('OKZ Sports App Initializing (User ID System)...');
+        console.log('OKZ Sports App Initializing (Manual Route Mode)...');
         
-        // FIX: Look for okz_user_id instead of accessToken
         const userId = localStorage.getItem('okz_user_id');
         const savedUser = localStorage.getItem('user');
         
-        // If we have a userId, the session is valid in this system
         if (userId && savedUser) {
             try {
                 this.state.user = JSON.parse(savedUser);
                 this.state.isAuthenticated = true;
-                console.log('Session restored for User ID:', userId);
             } catch (e) {
-                console.error('Failed to parse saved user data');
                 this.handleLogout();
             }
         }
     },
 
     /**
-     * Returns a global layout wrapper
+     * Updated Layout without Hashes
      */
     renderLayout(content) {
         const firstName = this.state.user?.fullName 
@@ -45,15 +36,15 @@ const App = {
         return `
             <nav class="navbar">
                 <div class="nav-container">
-                    <a href="#/" class="nav-logo">OKZ SPORTS</a>
+                    <span class="nav-logo" data-route="home" style="cursor:pointer">OKZ SPORTS</span>
                     <div class="nav-links">
-                        <a href="#/">Home</a>
-                        <a href="#/booking">Book Court</a>
+                        <button class="nav-link-btn" data-route="home">Home</button>
+                        <button class="nav-link-btn" data-route="booking">Book Court</button>
                         ${this.state.isAuthenticated 
-                            ? `<a href="#/my-bookings">My Bookings</a>
-                               <a href="#/dashboard">Dashboard</a>
+                            ? `<button class="nav-link-btn" data-route="my-bookings">My Bookings</button>
+                               <button class="nav-link-btn" data-route="dashboard">Dashboard</button>
                                <button id="logout-btn" class="nav-btn-link">Logout (${firstName})</button>`
-                            : `<a href="#/login">Login</a>`
+                            : `<button class="nav-link-btn" data-route="login">Login</button>`
                         }
                     </div>
                 </div>
@@ -68,38 +59,21 @@ const App = {
     },
 
     /**
-     * Logic to attach event listeners to the layout
+     * Logic to handle the manual logout
      */
-    attachLayoutEvents() {
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.handleLogout();
-            });
-        }
-    },
-
-    /**
-     * FIX: Updated to clear the specific User ID keys
-     */
-    handleLogout() {
+    async handleLogout() {
         console.log('Clearing User ID session...');
-        
-        // Clear new system keys
         localStorage.removeItem('okz_user_id');
         localStorage.removeItem('user');
-        
-        // Clear legacy keys just in case
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('isAdmin'); 
         
         this.state.user = null;
         this.state.isAuthenticated = false;
         
-        // Redirect to home and refresh to reset state
-        window.location.hash = '#/';
-        window.location.reload();
+        // Manual Redirect: Import Home dynamically and render
+        const Home = (await import('./pages/Home.js')).default;
+        const appContainer = document.getElementById('app');
+        appContainer.innerHTML = Home.render();
+        if (Home.afterRender) await Home.afterRender();
     }
 };
 

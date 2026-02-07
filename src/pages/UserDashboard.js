@@ -1,23 +1,29 @@
 /**
  * src/pages/UserDashboard.js
- * Authenticated User Overview - Updated for User ID System
+ * Authenticated User Overview - 100% Manual Routing
  */
 
 import App from '../app.js';
+import UserLogin from './UserLogin.js';
+import Booking from './Booking.js';
+import MyBookings from './MyBookings.js';
 
 export default {
     /**
      * Render the Dashboard layout
      */
     render: () => {
-        // 1. Get user from LocalStorage
         const user = App.state.user || JSON.parse(localStorage.getItem('user') || '{}');
         const userId = localStorage.getItem('okz_user_id');
 
-        // REDIRECT: Use okz_user_id instead of accessToken
+        // MANUAL REDIRECT: If no session, immediately swap to Login
         if (!userId) {
-            window.location.hash = '#/login';
-            return '';
+            setTimeout(() => {
+                const app = document.getElementById('app');
+                app.innerHTML = UserLogin.render();
+                if (UserLogin.afterRender) UserLogin.afterRender();
+            }, 0);
+            return '<div class="loader">Redirecting to login...</div>';
         }
 
         return `
@@ -31,8 +37,8 @@ export default {
                     <div class="card action-card">
                         <h3>Quick Actions</h3>
                         <div class="button-stack">
-                            <a href="#/booking" class="btn btn-primary">Book New Court</a>
-                            <a href="#/my-bookings" class="btn btn-secondary">View All Bookings</a>
+                            <button id="nav-booking-btn" class="btn btn-primary">Book New Court</button>
+                            <button id="nav-my-bookings-btn" class="btn btn-secondary">View All Bookings</button>
                         </div>
                     </div>
 
@@ -64,16 +70,28 @@ export default {
     },
 
     /**
-     * Logic to fetch recent bookings after the HTML is injected
+     * Logic to handle navigation and data fetching
      */
     afterRender: async () => {
-        const summaryContainer = document.getElementById('recent-bookings-summary');
+        const app = document.getElementById('app');
         const userId = localStorage.getItem('okz_user_id');
-
         if (!userId) return;
 
+        // --- MANUAL NAVIGATION HANDLERS ---
+        document.getElementById('nav-booking-btn').addEventListener('click', () => {
+            app.innerHTML = Booking.render();
+            if (Booking.afterRender) Booking.afterRender();
+        });
+
+        document.getElementById('nav-my-bookings-btn').addEventListener('click', () => {
+            app.innerHTML = MyBookings.render();
+            if (MyBookings.afterRender) MyBookings.afterRender();
+        });
+
+        // --- DATA FETCHING LOGIC ---
+        const summaryContainer = document.getElementById('recent-bookings-summary');
+
         try {
-            // 2. Fetch from the correct endpoint with x-user-id header
             const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
                 method: 'GET',
                 headers: {
@@ -85,9 +103,7 @@ export default {
 
             const res = await response.json();
 
-            // Your backend returns { status: 'success', data: { bookings: [...] } }
             if (response.ok && res.status === 'success' && res.data.bookings.length > 0) {
-                // Show only the 3 most recent bookings
                 const latest = res.data.bookings.slice(0, 3);
                 summaryContainer.innerHTML = `
                     <ul class="mini-booking-list">
@@ -103,8 +119,14 @@ export default {
             } else {
                 summaryContainer.innerHTML = `
                     <p>No recent bookings. Ready to play?</p>
-                    <a href="#/booking" class="text-link">Reserve your first court &rarr;</a>
+                    <button id="empty-state-booking-btn" class="btn-link">Reserve your first court &rarr;</button>
                 `;
+                
+                // Add listener for the empty state link
+                document.getElementById('empty-state-booking-btn')?.addEventListener('click', () => {
+                    app.innerHTML = Booking.render();
+                    if (Booking.afterRender) Booking.afterRender();
+                });
             }
         } catch (error) {
             console.error('Dashboard Activity Error:', error);

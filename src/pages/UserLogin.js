@@ -1,15 +1,17 @@
 /**
  * src/pages/UserLogin.js
- * SELF-NAVIGATING VERSION - Handles component transitions internally
+ * MANUAL ROUTING VERSION - Direct component injection
  */
 
 import UserDashboard from './UserDashboard.js';
+import Home from './Home.js';
+import UserRegister from './UserRegister.js';
 
 export default {
     render: () => `
         <div class="auth-page">
             <nav class="simple-nav">
-                <a href="/">← Back to Home</a>
+                <button id="back-home-btn" class="btn-link">← Back to Home</button>
             </nav>
             
             <div class="auth-container">
@@ -29,7 +31,7 @@ export default {
                 </form>
                 
                 <p class="auth-footer">
-                    Don't have an account? <a href="/register">Register here</a>
+                    Don't have an account? <button id="to-register-btn" class="btn-link">Register here</button>
                 </p>
             </div>
         </div>
@@ -38,7 +40,25 @@ export default {
     afterRender: () => {
         const form = document.getElementById('login-form');
         const btn = document.getElementById('login-btn');
-        const root = document.getElementById('main-container') || document.getElementById('root') || document.body;
+        const backBtn = document.getElementById('back-home-btn');
+        const regBtn = document.getElementById('to-register-btn');
+        
+        // Target the main 'app' container used in your index.html
+        const appContainer = document.getElementById('app');
+
+        // --- MANUAL NAVIGATION HANDLERS ---
+        
+        backBtn.addEventListener('click', () => {
+            appContainer.innerHTML = Home.render();
+            if (Home.afterRender) Home.afterRender();
+        });
+
+        regBtn.addEventListener('click', () => {
+            appContainer.innerHTML = UserRegister.render();
+            if (UserRegister.afterRender) UserRegister.afterRender();
+        });
+
+        // --- FORM SUBMISSION LOGIC ---
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -67,10 +87,10 @@ export default {
                         localStorage.setItem('okz_user_id', data.data.userId);
                         localStorage.setItem('user', JSON.stringify(data.data.user || {}));
                         
-                        // 2. SELF-NAVIGATE: Clear screen and render Dashboard
-                        root.innerHTML = UserDashboard.render();
+                        // 2. MANUAL SWAP: Inject Dashboard
+                        appContainer.innerHTML = UserDashboard.render();
                         
-                        // 3. EXECUTE LOGIC: Trigger the Dashboard's API calls
+                        // 3. TRIGGER LOGIC: Run Dashboard logic (API calls, etc.)
                         if (UserDashboard.afterRender) {
                             await UserDashboard.afterRender();
                         }
