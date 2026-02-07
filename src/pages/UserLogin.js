@@ -1,13 +1,15 @@
 /**
  * src/pages/UserLogin.js
- * BASIC VERSION - Simple navigation
+ * SELF-NAVIGATING VERSION - Handles component transitions internally
  */
+
+import UserDashboard from './UserDashboard.js';
 
 export default {
     render: () => `
         <div class="auth-page">
             <nav class="simple-nav">
-                <a href="#/">← Back to Home</a>
+                <a href="/">← Back to Home</a>
             </nav>
             
             <div class="auth-container">
@@ -27,7 +29,7 @@ export default {
                 </form>
                 
                 <p class="auth-footer">
-                    Don't have an account? <a href="#/register">Register here</a>
+                    Don't have an account? <a href="/register">Register here</a>
                 </p>
             </div>
         </div>
@@ -36,6 +38,7 @@ export default {
     afterRender: () => {
         const form = document.getElementById('login-form');
         const btn = document.getElementById('login-btn');
+        const root = document.getElementById('main-container') || document.getElementById('root') || document.body;
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -43,7 +46,6 @@ export default {
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
 
-            // Disable button
             btn.disabled = true;
             btn.textContent = 'Logging in...';
 
@@ -59,28 +61,32 @@ export default {
 
                 const data = await response.json();
                 
-                // SIMPLE CHECK: If response is 200 OK
                 if (response.ok) {
-                    // Save user data to localStorage
                     if (data.data && data.data.userId) {
+                        // 1. Persist Session
                         localStorage.setItem('okz_user_id', data.data.userId);
                         localStorage.setItem('user', JSON.stringify(data.data.user || {}));
                         
-                        // Navigate IMMEDIATELY to dashboard
-                        window.location.hash = '#/dashboard';
+                        // 2. SELF-NAVIGATE: Clear screen and render Dashboard
+                        root.innerHTML = UserDashboard.render();
+                        
+                        // 3. EXECUTE LOGIC: Trigger the Dashboard's API calls
+                        if (UserDashboard.afterRender) {
+                            await UserDashboard.afterRender();
+                        }
                     } else {
                         alert('Login successful but no user data received.');
                         btn.disabled = false;
                         btn.textContent = 'Login';
                     }
                 } else {
-                    // Show error message
                     alert(data.message || 'Login failed. Please check your credentials.');
                     btn.disabled = false;
                     btn.textContent = 'Login';
                 }
                 
             } catch (error) {
+                console.error('Login Error:', error);
                 alert('Network error. Please check your internet connection.');
                 btn.disabled = false;
                 btn.textContent = 'Login';
