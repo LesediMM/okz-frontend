@@ -1,6 +1,7 @@
 /**
  * src/pages/UserDashboard.js
  * Authenticated User Overview - 100% Manual Routing
+ * Updated with sessionStorage and proper headers
  */
 
 import App from '../app.js';
@@ -13,11 +14,27 @@ export default {
      * Render the Dashboard layout
      */
     render: () => {
-        const user = App.state.user || JSON.parse(localStorage.getItem('user') || '{}');
-        const userId = localStorage.getItem('okz_user_id');
+        // Check both sessionStorage and localStorage
+        const sessionUserId = sessionStorage.getItem('okz_user_id');
+        const sessionUser = sessionStorage.getItem('user');
+        
+        const localUserId = localStorage.getItem('okz_user_id');
+        const localUser = localStorage.getItem('user');
+        
+        const userId = sessionUserId || localUserId;
+        const user = sessionUser ? JSON.parse(sessionUser) : 
+                    localUser ? JSON.parse(localUser) : 
+                    (App.state.user || {});
+        
+        console.log('🔍 Dashboard render - Checking user session...');
+        console.log('SessionStorage userId:', sessionUserId);
+        console.log('LocalStorage userId:', localUserId);
+        console.log('Selected userId:', userId);
+        console.log('User object:', user);
 
         // MANUAL REDIRECT: If no session, immediately swap to Login
         if (!userId) {
+            console.log('❌ No user ID found, redirecting to login...');
             setTimeout(() => {
                 const app = document.getElementById('app');
                 app.innerHTML = UserLogin.render();
@@ -26,6 +43,7 @@ export default {
             return '<div class="loader">Redirecting to login...</div>';
         }
 
+        console.log('✅ User authenticated, rendering dashboard...');
         return `
             <div class="dashboard-page">
                 <header class="dashboard-header">
@@ -44,7 +62,7 @@ export default {
 
                     <div class="card profile-card">
                         <h3>Your Profile</h3>
-                        <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>Email:</strong> ${user.email || 'Not available'}</p>
                         <p><strong>Phone:</strong> ${user.phoneNumber || 'Not provided'}</p>
                         <p><strong>Status:</strong> <span class="status-badge status-active">Active Member</span></p>
                     </div>
@@ -73,17 +91,29 @@ export default {
      * Logic to handle navigation and data fetching
      */
     afterRender: async () => {
+        console.log('🔧 Dashboard afterRender started...');
+        
         const app = document.getElementById('app');
-        const userId = localStorage.getItem('okz_user_id');
-        if (!userId) return;
+        
+        // Get user ID from sessionStorage first, then localStorage
+        const userId = sessionStorage.getItem('okz_user_id') || localStorage.getItem('okz_user_id');
+        
+        console.log('📋 Using userId for fetch:', userId);
+        
+        if (!userId) {
+            console.error('❌ No user ID available for fetch');
+            return;
+        }
 
         // --- MANUAL NAVIGATION HANDLERS ---
         document.getElementById('nav-booking-btn').addEventListener('click', () => {
+            console.log('📅 Navigating to Booking page...');
             app.innerHTML = Booking.render();
             if (Booking.afterRender) Booking.afterRender();
         });
 
         document.getElementById('nav-my-bookings-btn').addEventListener('click', () => {
+            console.log('📋 Navigating to MyBookings page...');
             app.innerHTML = MyBookings.render();
             if (MyBookings.afterRender) MyBookings.afterRender();
         });
@@ -92,23 +122,40 @@ export default {
         const summaryContainer = document.getElementById('recent-bookings-summary');
 
         try {
+            console.log('📤 Fetching bookings from API...');
+            console.log('Request headers:', {
+                'x-user-id': userId,
+                'X-User-ID': userId,
+                'Origin': 'https://okz-frontend.onrender.com',
+                'Content-Type': 'application/json'
+            });
+            
             const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
                 method: 'GET',
-                mode: 'cors', // Explicit CORS mode
+                mode: 'cors',
                 headers: {
-                    'Authorization': userId, // CHANGED from 'x-user-id'
+                    'x-user-id': userId,        // lowercase - backend expects this
+                    'X-User-ID': userId,        // uppercase - for case-sensitive browsers
                     'Origin': 'https://okz-frontend.onrender.com',
                     'Content-Type': 'application/json'
                 }
             });
 
-            console.log('Dashboard fetch - Status:', response.status);
-            console.log('Dashboard fetch - Headers:', [...response.headers.entries()]);
-
+            console.log('📥 API Response - Status:', response.status);
+            console.log('📥 API Response - Headers:', [...response.headers.entries()]);
+            
+            // Check if response is OK before parsing JSON
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ API Error Response:', errorText);
+                throw new Error(`API returned ${response.status}: ${errorText}`);
+            }
+            
             const res = await response.json();
-            console.log('Dashboard fetch - Response:', res);
+            console.log('📥 API Response - Data:', res);
 
             if (response.ok && res.status === 'success' && res.data.bookings.length > 0) {
+                console.log(`✅ Found ${res.data.bookings.length} bookings`);
                 const latest = res.data.bookings.slice(0, 3);
                 summaryContainer.innerHTML = `
                     <ul class="mini-booking-list">
@@ -122,6 +169,7 @@ export default {
                     </ul>
                 `;
             } else {
+                console.log('ℹ️ No bookings found or empty response');
                 summaryContainer.innerHTML = `
                     <p>No recent bookings. Ready to play?</p>
                     <button id="empty-state-booking-btn" class="btn-link">Reserve your first court &rarr;</button>
@@ -129,13 +177,27 @@ export default {
                 
                 // Add listener for the empty state link
                 document.getElementById('empty-state-booking-btn')?.addEventListener('click', () => {
+                    console.log('📅 Navigating to Booking from empty state...');
                     app.innerHTML = Booking.render();
                     if (Booking.afterRender) Booking.afterRender();
                 });
             }
         } catch (error) {
-            console.error('Dashboard Activity Error:', error);
-            summaryContainer.innerHTML = `<p class="error-text">Unable to load activity: ${error.message}</p>`;
+            console.error('❌ Dashboard Activity Error:', error);
+            summaryContainer.innerHTML = `
+                <div class="error-message">
+                    <p class="error-text">Unable to load activity: ${error.message}</p>
+                    <button id="retry-fetch-btn" class="btn btn-outline">Retry</button>
+                </div>
+            `;
+            
+            // Add retry button listener
+            document.getElementById('retry-fetch-btn')?.addEventListener('click', () => {
+                console.log('🔄 Retrying fetch...');
+                // Re-run afterRender
+                const currentAfterRender = this.afterRender;
+                currentAfterRender.call(this);
+            });
         }
     }
 };
