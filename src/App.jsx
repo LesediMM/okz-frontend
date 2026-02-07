@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// Layout and Pages
-import Layout from './components/Layout';
-import Home from './pages/Home';
-import Booking from './pages/Booking';
-import Dashboard from './pages/UserDashboard';
-import Login from './pages/UserLogin';
-import Register from './pages/UserRegister';
-import MyBookings from './pages/MyBookings';
+// Layout and Pages - Explicit .jsx extensions for Vite Build Analysis
+import Layout from './components/Layout.jsx';
+import Home from './pages/Home.jsx';
+import Booking from './pages/Booking.jsx';
+import Dashboard from './pages/UserDashboard.jsx';
+import Login from './pages/UserLogin.jsx';
+import Register from './pages/UserRegister.jsx';
+import MyBookings from './pages/MyBookings.jsx';
 
 /**
  * OKZ Sports - Main Application Component
@@ -16,13 +16,9 @@ import MyBookings from './pages/MyBookings';
  */
 function App() {
     // Zero-Storage: State is held in volatile memory (RAM).
-    // Refreshing the browser will naturally "log out" the user.
     const [user, setUser] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    /**
-     * Handlers for updating global state
-     */
     const handleLoginSuccess = (userData) => {
         setUser(userData);
         setIsAuthenticated(true);
@@ -37,7 +33,6 @@ function App() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* Main Shell wrapping all routes */}
                 <Route 
                     path="/" 
                     element={
@@ -48,7 +43,6 @@ function App() {
                         />
                     }
                 >
-                    {/* Public Routes */}
                     <Route index element={<Home />} />
                     <Route 
                         path="login" 
@@ -60,7 +54,6 @@ function App() {
                     />
                     <Route path="register" element={<Register />} />
 
-                    {/* Feature Routes - Passing user state as props */}
                     <Route 
                         path="booking" 
                         element={<Booking user={user} />} 
@@ -74,7 +67,6 @@ function App() {
                         element={<MyBookings user={user} />} 
                     />
 
-                    {/* Fallback Catch-all */}
                     <Route path="*" element={<Navigate to="/" />} />
                 </Route>
             </Routes>
