@@ -1,7 +1,6 @@
 /**
  * src/app.js
  * Core Application Logic & Global State
- * Simplified Version (Direct API Calls)
  */
 
 const App = {
@@ -21,35 +20,15 @@ const App = {
         const token = localStorage.getItem('accessToken');
         const savedUser = localStorage.getItem('user');
         
-        if (token) {
+        // If we have a token and user data, restore the session
+        if (token && savedUser) {
             try {
-                // Verify token directly with your backend
-                const response = await fetch('https://okz.onrender.com/api/v1/login/status', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok && result.status === 'success') {
-                    this.state.user = result.data.user;
-                    this.state.isAuthenticated = true;
-                    console.log('User authenticated:', this.state.user.email);
-                } else {
-                    // Token invalid or expired
-                    this.handleLogout();
-                }
-            } catch (error) {
-                console.error('Auth initialization failed:', error);
-                // If the server is down, we can still trust localStorage for UI state
-                // or force logout if you want strict security:
-                if (savedUser) {
-                    this.state.user = JSON.parse(savedUser);
-                    this.state.isAuthenticated = true;
-                }
+                this.state.user = JSON.parse(savedUser);
+                this.state.isAuthenticated = true;
+                console.log('Session restored for:', this.state.user.email);
+            } catch (e) {
+                console.error('Failed to parse saved user data');
+                this.handleLogout();
             }
         }
     },
@@ -58,6 +37,11 @@ const App = {
      * Returns a global layout wrapper
      */
     renderLayout(content) {
+        // Safe check for the user's name to display in the logout button
+        const firstName = this.state.user?.fullName 
+            ? this.state.user.fullName.split(' ')[0] 
+            : 'User';
+
         return `
             <nav class="navbar">
                 <div class="nav-container">
@@ -67,7 +51,8 @@ const App = {
                         <a href="#/booking">Book Court</a>
                         ${this.state.isAuthenticated 
                             ? `<a href="#/my-bookings">My Bookings</a>
-                               <button id="logout-btn" class="nav-btn-link">Logout (${this.state.user?.fullName?.split(' ')[0]})</button>`
+                               <a href="#/dashboard">Dashboard</a>
+                               <button id="logout-btn" class="nav-btn-link">Logout (${firstName})</button>`
                             : `<a href="#/login">Login</a>`
                         }
                     </div>
@@ -82,13 +67,27 @@ const App = {
         `;
     },
 
+    /**
+     * Logic to attach event listeners to the layout (like the logout button)
+     */
+    attachLayoutEvents() {
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.handleLogout());
+        }
+    },
+
     handleLogout() {
+        console.log('Logging out...');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
+        localStorage.removeItem('isAdmin'); // Clear admin flag if present
         this.state.user = null;
         this.state.isAuthenticated = false;
+        
+        // Redirect to login and refresh to clear any sensitive data in memory
         window.location.hash = '#/login';
-        window.location.reload(); // Refresh to clear state
+        window.location.reload();
     }
 };
 

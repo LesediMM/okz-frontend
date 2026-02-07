@@ -1,6 +1,6 @@
 /**
  * src/pages/UserLogin.js
- * User Authentication Page - Simplified (No external API imports)
+ * User Authentication Page - Fixed & Verified
  */
 
 export default {
@@ -49,7 +49,7 @@ export default {
             };
 
             try {
-                // 2. Call Auth API directly using fetch
+                // 2. Call Auth API
                 const response = await fetch('https://okz.onrender.com/api/v1/login', {
                     method: 'POST',
                     headers: {
@@ -61,15 +61,27 @@ export default {
                 const res = await response.json();
 
                 if (response.ok && res.status === 'success') {
-                    // 3. Store Auth Data
-                    localStorage.setItem('accessToken', res.data.token);
-                    localStorage.setItem('user', JSON.stringify(res.data.user));
+                    /**
+                     * FIXED LOGIC:
+                     * Backend might send token as res.token OR res.data.token
+                     * Backend might send user as res.user OR res.data.user
+                     */
+                    const token = res.token || (res.data && res.data.token);
+                    const user = res.user || (res.data && res.data.user);
 
-                    // 4. Redirect to Booking page
+                    if (!token) {
+                        throw new Error('Token missing from server response');
+                    }
+
+                    // 3. Store Auth Data securely
+                    localStorage.setItem('accessToken', token);
+                    localStorage.setItem('user', JSON.stringify(user || { email: credentials.email }));
+
+                    // 4. Redirect & Refresh
+                    // We use hash change first, then reload to ensure App.js sees the new localStorage
                     window.location.hash = '#/booking';
-                    
-                    // Force a reload to update the Navbar in app.js
                     window.location.reload();
+                    
                 } else {
                     // Handle "Invalid credentials" or other errors
                     alert(res.message || 'Login failed. Please check your email and password.');
@@ -78,7 +90,7 @@ export default {
                 }
             } catch (err) {
                 console.error('Login error:', err);
-                alert('An unexpected error occurred. Please check your internet connection and try again.');
+                alert('An unexpected error occurred. Please verify your credentials and try again.');
                 btn.disabled = false;
                 btn.innerText = 'Login';
             }
