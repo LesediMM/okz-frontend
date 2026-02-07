@@ -1,7 +1,7 @@
 /**
  * src/pages/Booking.js
  * Integrated Booking Page - Production Version
- * Simplified: Direct API calls and handling backend availability matrix
+ * Each time slot serves as an immediate booking trigger.
  */
 
 export default {
@@ -9,13 +9,13 @@ export default {
         <div class="booking-container">
             <div class="booking-header">
                 <h2>Reserve a Court</h2>
-                <p>Select your preferences to see available times.</p>
+                <p>Select your preferences below. Clicking an available time slot will confirm your booking.</p>
             </div>
             
             <div class="booking-form-grid">
                 <div class="form-group">
                     <label>1. Select Date</label>
-                    <input type="date" id="booking-date" min="${new Date().toISOString().split('T')[0]}">
+                    <input type="date" id="booking-date" min="${new Date().toISOString().split('T')[0]}" value="${new Date().toISOString().split('T')[0]}">
                 </div>
 
                 <div class="form-group">
@@ -45,7 +45,7 @@ export default {
 
             <div id="availability-section" class="availability-section">
                 <h3>5. Available Time Slots</h3>
-                <p id="availability-hint">Please select a date to see availability.</p>
+                <p id="availability-hint">Loading availability...</p>
                 <div id="availability-slots" class="availability-grid">
                     </div>
             </div>
@@ -59,59 +59,74 @@ export default {
         const slotContainer = document.getElementById('availability-slots');
         const hint = document.getElementById('availability-hint');
 
+        /**
+         * Updates the court selection dropdown based on type
+         */
         const updateCourts = () => {
             courtSelect.innerHTML = typeInput.value === 'paddle' 
                 ? '<option value="1">Paddle Court 1</option><option value="2">Paddle Court 2</option>'
                 : '<option value="3">Tennis Court 1</option><option value="4">Tennis Court 2</option><option value="5">Tennis Court 3</option>';
         };
 
+        /**
+         * Fetches availability and renders buttons
+         */
         const fetchSlots = async () => {
-            if (!dateInput.value) return;
+            if (!dateInput.value) {
+                hint.innerText = "Please select a date.";
+                return;
+            }
 
-            hint.innerText = "Checking availability...";
+            hint.innerText = "Checking backend for availability...";
             slotContainer.innerHTML = '';
 
             try {
-                // Fetch availability from backend
+                // Ensure correct endpoint: /availability
                 const res = await fetch(`https://okz.onrender.com/api/v1/bookings/availability?date=${dateInput.value}&type=${typeInput.value}`);
                 const result = await res.json();
 
                 if (result.status === 'success') {
-                    const selectedCourt = courtSelect.value;
-                    const courtAvailability = result.data.availability[selectedCourt];
+                    const selectedCourtId = courtSelect.value;
+                    const courtAvailability = result.data.availability[selectedCourtId];
                     
-                    slotContainer.innerHTML = '';
-                    hint.innerText = `Showing slots for Court ${selectedCourt}`;
+                    hint.innerText = `Click a time to book Court ${selectedCourtId} on ${dateInput.value}`;
 
-                    // The backend returns an object { "08:00": "available", "08:30": "booked" ... }
-                    // We only want to show buttons for "available" slots
+                    // Filter for only 'available' times
                     const slots = Object.keys(courtAvailability).filter(time => courtAvailability[time] === 'available');
 
                     if (slots.length === 0) {
-                        hint.innerText = "No slots available for this court on the selected date.";
+                        hint.innerText = "Fully booked for this selection. Try another court or date.";
                     } else {
                         slots.forEach(time => {
                             const btn = document.createElement('button');
                             btn.className = 'slot-btn';
                             btn.innerText = time;
-                            btn.onclick = () => makeBooking(time);
+                            btn.title = `Book for ${time}`;
+                            btn.onclick = () => makeBooking(time, btn);
                             slotContainer.appendChild(btn);
                         });
                     }
                 }
             } catch (err) {
                 console.error('Fetch error:', err);
-                hint.innerText = "Error loading availability. Check connection.";
+                hint.innerText = "Could not load slots. Ensure your backend is running.";
             }
         };
 
-        const makeBooking = async (time) => {
+        /**
+         * Sends the POST request to confirm booking
+         */
+        const makeBooking = async (time, buttonElement) => {
             const token = localStorage.getItem('accessToken');
             if (!token) {
-                alert("Please login to book a court!");
+                alert("Session expired. Please login again.");
                 window.location.hash = '#/login';
                 return;
             }
+
+            // Disable button to prevent double-clicks
+            buttonElement.disabled = true;
+            buttonElement.innerText = "Booking...";
 
             const bookingData = {
                 courtNumber: parseInt(courtSelect.value),
@@ -133,14 +148,18 @@ export default {
 
                 const result = await response.json();
 
-                if (response.ok) {
-                    alert("Booking Confirmed Successfully!");
+                if (response.ok && result.status === 'success') {
+                    alert(`Confirmed! Court ${bookingData.courtNumber} is yours at ${time}.`);
                     window.location.hash = '#/my-bookings';
                 } else {
-                    alert("Booking Failed: " + result.message);
+                    alert("Booking Failed: " + (result.message || "Unknown error"));
+                    buttonElement.disabled = false;
+                    buttonElement.innerText = time;
                 }
             } catch (err) {
-                alert("Server error. Please try again.");
+                alert("Network error. Please try again.");
+                buttonElement.disabled = false;
+                buttonElement.innerText = time;
             }
         };
 
@@ -149,7 +168,8 @@ export default {
         typeInput.addEventListener('change', () => { updateCourts(); fetchSlots(); });
         courtSelect.addEventListener('change', fetchSlots);
         
-        // Init
+        // Initial Startup
         updateCourts();
+        fetchSlots();
     }
 };
