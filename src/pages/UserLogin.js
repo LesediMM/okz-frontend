@@ -1,7 +1,6 @@
 /**
  * src/pages/UserLogin.js
- * MANUAL ROUTING VERSION - Fixed to save user data before navigation
- * Uses sessionStorage for better security
+ * MANUAL ROUTING VERSION - Zero Storage Frontend
  */
 import UserDashboard from './UserDashboard.js';
 import Home from './Home.js';
@@ -55,25 +54,17 @@ export default {
             if (UserRegister.afterRender) UserRegister.afterRender();
         });
 
-        // --- FIXED FORM SUBMISSION LOGIC ---
+        // --- FORM SUBMISSION LOGIC ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
 
-            // Clear any previous session data first
-            sessionStorage.removeItem('okz_user_id');
-            sessionStorage.removeItem('user');
-            localStorage.removeItem('okz_user_id');
-            localStorage.removeItem('user');
-
             btn.disabled = true;
             btn.textContent = 'Logging in...';
 
             try {
-                console.log('🔐 Attempting login for:', email);
-                
                 const response = await fetch('https://okz.onrender.com/api/v1/login', {
                     method: 'POST',
                     headers: {
@@ -83,72 +74,24 @@ export default {
                     body: JSON.stringify({ email, password })
                 });
 
-                // --- PARSE RESPONSE ---
                 const result = await response.json();
-                console.log('📥 Login API response:', result);
 
                 if (response.ok && result.status === 'success') {
-                    
-                    // ✅ CRITICAL: EXTRACT AND VALIDATE USER DATA
-                    const userId = result.data?.userId;
-                    const user = result.data?.user;
-                    
-                    if (!userId) {
-                        console.error('❌ No userId in API response');
-                        alert('Login successful but no user ID received. Please contact support.');
-                        btn.disabled = false;
-                        btn.textContent = 'Login';
-                        return;
-                    }
-                    
+                    // ✅ NO STORAGE - just navigate
                     console.log('✅ Login successful!');
-                    console.log('User ID:', userId);
-                    console.log('User object:', user);
                     
-                    // ✅ SAVE TO SESSION STORAGE (more secure)
-                    sessionStorage.setItem('okz_user_id', userId);
-                    if (user) {
-                        sessionStorage.setItem('user', JSON.stringify(user));
-                    }
-                    
-                    // ✅ Also save to localStorage as backup
-                    localStorage.setItem('okz_user_id', userId);
-                    if (user) {
-                        localStorage.setItem('user', JSON.stringify(user));
-                    }
-                    
-                    // ✅ VERIFY SAVED DATA
-                    const savedUserId = sessionStorage.getItem('okz_user_id');
-                    console.log('💾 Saved to sessionStorage:', savedUserId);
-                    console.log('Matches original?', savedUserId === userId);
-                    
-                    // ✅ Update App.state
-                    try {
-                        const AppModule = await import('../app.js');
-                        const App = AppModule.default;
-                        App.state.user = user;
-                        App.state.isAuthenticated = true;
-                        console.log('✅ Updated App.state');
-                    } catch (err) {
-                        console.log('⚠️ Could not update App.state:', err);
-                    }
-                    
-                    // ✅ NAVIGATE TO DASHBOARD
-                    console.log('🚀 Navigating to Dashboard...');
+                    // Navigate to Dashboard
                     appContainer.innerHTML = UserDashboard.render();
                     
                     if (UserDashboard.afterRender) {
                         try {
                             await UserDashboard.afterRender();
                         } catch (err) {
-                            console.error('❌ Dashboard afterRender error:', err);
-                            // Even if afterRender fails, at least we're on Dashboard
+                            console.error('Dashboard afterRender error:', err);
                         }
                     }
                     
                 } else {
-                    // Handle API error
-                    console.error('❌ Login failed:', result);
                     const errorMessage = result.message || 'Login failed. Please check your credentials.';
                     alert(`Login failed: ${errorMessage}`);
                     btn.disabled = false;
@@ -156,7 +99,7 @@ export default {
                 }
 
             } catch (error) {
-                console.error('❌ Network/Login Error:', error);
+                console.error('Login Error:', error);
                 alert('Network error. Please check your internet connection.');
                 btn.disabled = false;
                 btn.textContent = 'Login';
