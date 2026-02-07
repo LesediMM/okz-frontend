@@ -1,37 +1,146 @@
+/* --- OKZ Sports - Authentication Styles --- */
+
 .auth-page {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: calc(100vh - 80px);
-    padding: 20px;
+    min-height: calc(100vh - 100px); /* Adjusting for navbar height */
+    padding: 24px;
+    background: radial-gradient(circle at top right, rgba(26, 43, 86, 0.05), transparent);
   }
   
   .auth-card {
     width: 100%;
-    max-width: 420px;
-    padding: 40px;
+    max-width: 440px;
+    padding: 48px 40px;
+    border-radius: 28px;
+    /* Glassmorphism provided by global.css .glass-panel, adding specific depth here */
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
   }
   
-  .auth-header { text-align: center; margin-bottom: 32px; }
-  .apple-logo-icon { font-size: 3rem; margin-bottom: 8px; }
-  .auth-header h2 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; color: var(--brand-navy); }
+  .auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
   
-  .input-group { margin-bottom: 20px; text-align: left; }
-  .input-group label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; margin-left: 4px; }
+  .apple-logo-icon {
+    font-size: 3.5rem;
+    margin-bottom: 12px;
+    display: block;
+  }
+  
+  .auth-header h2 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    color: var(--brand-navy);
+    margin-bottom: 8px;
+  }
+  
+  /* --- Error Notification Banner --- */
+  .error-banner {
+    background: rgba(255, 59, 48, 0.08); /* Apple Red at 8% opacity */
+    border: 1px solid rgba(255, 59, 48, 0.2);
+    color: #ff3b30;
+    padding: 14px 16px;
+    border-radius: 14px;
+    margin-bottom: 24px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    backdrop-filter: blur(10px);
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  }
+  
+  .error-icon {
+    font-size: 1.1rem;
+  }
+  
+  /* --- Form Elements --- */
+  .input-group {
+    margin-bottom: 22px;
+    text-align: left;
+  }
+  
+  .input-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    margin-left: 6px;
+  }
   
   .auth-card input {
     width: 100%;
-    padding: 16px;
+    padding: 16px 20px;
     border-radius: 14px;
-    border: 1px solid rgba(0,0,0,0.08);
-    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.6);
     font-size: 1rem;
-    transition: all 0.2s;
+    font-family: inherit;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .auth-card input:focus {
     outline: none;
-    background: #fff;
+    background: #ffffff;
     border-color: var(--brand-navy);
-    box-shadow: 0 0 0 4px rgba(26, 43, 86, 0.05);
+    box-shadow: 0 0 0 5px rgba(26, 43, 86, 0.08);
+    transform: translateY(-1px);
+  }
+  
+  .auth-card input::placeholder {
+    color: rgba(0, 0, 0, 0.2);
+  }
+  
+  /* --- Actions & Transitions --- */
+  .auth-actions {
+    margin-top: 32px;
+  }
+  
+  .btn-primary {
+    transition: transform 0.2s, background-color 0.2s;
+    cursor: pointer;
+  }
+  
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+  
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .auth-footer p {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+  }
+  
+  .auth-footer a:hover {
+    text-decoration: underline !important;
+    opacity: 0.8;
+  }
+  
+  /* --- Animations --- */
+  @keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+  }
+  
+  /* Responsive Tweak */
+  @media (max-width: 480px) {
+    .auth-card {
+      padding: 32px 24px;
+      border-radius: 0; /* Full width feel on mobile */
+      box-shadow: none;
+      background: transparent;
+    }
   }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import '../styles/Auth.css'; // Importing your new separation of concerns style
+import '../styles/Auth.css'; 
 
 const UserRegister = () => {
     const navigate = useNavigate();
@@ -12,6 +12,7 @@ const UserRegister = () => {
         phoneNumber: ''
     });
     const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState(""); // 🛡️ Error Notification State
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -19,6 +20,7 @@ const UserRegister = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setErrorMessage(""); // Clear old errors
         setLoading(true);
 
         try {
@@ -33,25 +35,36 @@ const UserRegister = () => {
             if (response.ok && res.status === 'success') {
                 navigate('/login');
             } else {
-                alert(`Error: ${res.message || 'Registration failed.'}`);
+                // 🛡️ THE ERROR KILLER: Extract specific backend validation messages
+                const msg = res.errors && res.errors.length > 0 
+                    ? res.errors[0].message 
+                    : (res.message || 'Registration failed.');
+                
+                setErrorMessage(msg);
                 setLoading(false);
             }
         } catch (err) {
-            alert('Connection error. Please try again.');
+            setErrorMessage('Connection error. The server might be waking up.');
             setLoading(false);
         }
     };
 
     return (
         <div className="auth-page apple-fade-in">
-            {/* Using the glass-panel class from global.css and auth-card from Auth.css */}
             <div className="glass-panel auth-card">
                 <div className="auth-header">
-                    {/* Using your brand navy color for the icon focus */}
                     <div className="apple-logo-icon" style={{ color: 'var(--brand-navy)' }}>🎾</div>
                     <h2>Join OKZ</h2>
                     <p className="text-muted">Experience premier court management.</p>
                 </div>
+
+                {/* 🛡️ Dynamic Error Banner */}
+                {errorMessage && (
+                    <div className="error-banner apple-fade-in">
+                        <span className="error-icon">⚠️</span>
+                        {errorMessage}
+                    </div>
+                )}
                 
                 <form onSubmit={handleSubmit} className="apple-form">
                     <div className="input-group">
@@ -83,7 +96,7 @@ const UserRegister = () => {
                         <input 
                             type="password" 
                             name="password" 
-                            placeholder="Required" 
+                            placeholder="Min 8 chars, 1 Upper, 1 Number" 
                             value={formData.password}
                             onChange={handleChange}
                             required 
@@ -105,7 +118,7 @@ const UserRegister = () => {
                     <div className="auth-actions">
                         <button 
                             type="submit" 
-                            className="btn-primary"
+                            className={`btn-primary ${loading ? 'btn-loading' : ''}`}
                             style={{ width: '100%', padding: '16px', fontSize: '1rem' }}
                             disabled={loading}
                         >
