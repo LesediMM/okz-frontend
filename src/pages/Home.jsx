@@ -22,7 +22,6 @@ const Home = () => {
             <div className="portal-wrapper">
                 <div className="glass-panel main-portal-card">
                     <div className="card-header">
-                        <div className="brand-icon">🎾</div>
                         <h2>Player Portal</h2>
                         <p className="text-muted">Everything you need to stay on the court.</p>
                     </div>
@@ -30,11 +29,11 @@ const Home = () => {
                     <div className="feature-highlight">
                         <div className="feature-item">
                             <span className="feature-label">Flat Rate</span>
-                            <span className="feature-val">400 EGP / hr</span>
+                            <span className="feature-val"> 400 EGP / hr</span>
                         </div>
                         <div className="feature-item">
                             <span className="feature-label">Availability</span>
-                            <span className="feature-val">Instant</span>
+                            <span className="feature-val"> Instant</span>
                         </div>
                     </div>
 
