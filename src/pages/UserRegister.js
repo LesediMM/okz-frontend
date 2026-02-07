@@ -1,115 +1,122 @@
-/**
- * src/pages/UserRegister.js
- * User Registration Page - Zero Storage Frontend
- */
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 
-import UserLogin from './UserLogin.js';
+const UserRegister = () => {
+    const navigate = useNavigate();
+    
+    // Local state for form fields
+    const [formData, setFormData] = useState({
+        fullName: '',
+        email: '',
+        password: '',
+        phoneNumber: ''
+    });
+    const [loading, setLoading] = useState(false);
 
-export default {
-    render: () => `
-        <div class="auth-page">
-            <div class="auth-header">
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const response = await fetch('https://okz.onrender.com/api/v1/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const res = await response.json();
+
+            if (response.ok && res.status === 'success') {
+                alert('✅ Registration successful! Please login.');
+                navigate('/login'); // Automatic navigation via React Router
+            } else {
+                const errorMessage = res.message || 'Registration failed.';
+                alert(`Error: ${errorMessage}`);
+                setLoading(false);
+            }
+        } catch (err) {
+            console.error('Registration error:', err);
+            alert('Connection error. Please try again.');
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="auth-page">
+            <div className="auth-header">
                 <h2>Join OKZ Sports</h2>
-                <p>Create an account to book Paddle and Tennis courts</p>
+                <p>Create an account to book Padel and Tennis courts</p>
             </div>
             
-            <form id="register-form" class="auth-form">
-                <div class="form-group">
-                    <label for="fullName">Full Name</label>
-                    <input type="text" id="fullName" name="fullName" placeholder="Enter your full name" required>
+            <form onSubmit={handleSubmit} className="auth-form">
+                <div className="form-group">
+                    <label htmlFor="fullName">Full Name</label>
+                    <input 
+                        type="text" 
+                        name="fullName" 
+                        placeholder="Enter your full name" 
+                        value={formData.fullName}
+                        onChange={handleChange}
+                        required 
+                    />
                 </div>
 
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" placeholder="name@example.com" required>
+                <div className="form-group">
+                    <label htmlFor="email">Email Address</label>
+                    <input 
+                        type="email" 
+                        name="email" 
+                        placeholder="name@example.com" 
+                        value={formData.email}
+                        onChange={handleChange}
+                        required 
+                    />
                 </div>
 
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Min. 6 chars (1 Upper, 1 Lower, 1 Number)" required>
+                <div className="form-group">
+                    <label htmlFor="password">Password</label>
+                    <input 
+                        type="password" 
+                        name="password" 
+                        placeholder="Min. 6 chars (1 Upper, 1 Lower, 1 Number)" 
+                        value={formData.password}
+                        onChange={handleChange}
+                        required 
+                    />
                 </div>
 
-                <div class="form-group">
-                    <label for="phoneNumber">Phone Number</label>
-                    <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="e.g. 01012345678" required>
+                <div className="form-group">
+                    <label htmlFor="phoneNumber">Phone Number</label>
+                    <input 
+                        type="tel" 
+                        name="phoneNumber" 
+                        placeholder="e.g. 01012345678" 
+                        value={formData.phoneNumber}
+                        onChange={handleChange}
+                        required 
+                    />
                 </div>
 
-                <button type="submit" id="reg-btn" class="btn btn-primary btn-block">Register</button>
+                <button 
+                    type="submit" 
+                    className="btn btn-primary btn-block" 
+                    disabled={loading}
+                >
+                    {loading ? 'Creating Account...' : 'Register'}
+                </button>
             </form>
 
-            <div class="auth-footer">
-                <p>Already have an account? <button id="to-login-btn" class="btn-link">Login here</button></p>
+            <div className="auth-footer">
+                <p>Already have an account? <Link to="/login" className="btn-link">Login here</Link></p>
             </div>
         </div>
-    `,
-
-    afterRender: () => {
-        const form = document.getElementById('register-form');
-        const btn = document.getElementById('reg-btn');
-        const loginRedirectBtn = document.getElementById('to-login-btn');
-        const appContainer = document.getElementById('app');
-
-        // Manual Navigation to Login
-        loginRedirectBtn.addEventListener('click', () => {
-            appContainer.innerHTML = UserLogin.render();
-            if (UserLogin.afterRender) UserLogin.afterRender();
-        });
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            btn.disabled = true;
-            btn.innerText = 'Creating Account...';
-
-            const userData = {
-                fullName: document.getElementById('fullName').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                password: document.getElementById('password').value,
-                phoneNumber: document.getElementById('phoneNumber').value.trim()
-            };
-
-            try {
-                const response = await fetch('https://okz.onrender.com/api/v1/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Origin': 'https://okz-frontend.onrender.com'
-                    },
-                    body: JSON.stringify(userData)
-                });
-
-                const res = await response.json();
-
-                if (response.ok && res.status === 'success') {
-                    alert('✅ Registration successful! Please login.');
-                    
-                    // Clear form
-                    form.reset();
-                    
-                    // Navigate to Login
-                    appContainer.innerHTML = UserLogin.render();
-                    if (UserLogin.afterRender) {
-                        await UserLogin.afterRender();
-                    }
-                } else {
-                    const errorMessage = res.message || 'Registration failed. Please try again.';
-                    
-                    if (res.errors && Array.isArray(res.errors)) {
-                        const fieldErrors = res.errors.map(err => `${err.field}: ${err.message}`).join('\n');
-                        alert(`Registration failed:\n${fieldErrors}`);
-                    } else {
-                        alert(`Registration failed: ${errorMessage}`);
-                    }
-                    
-                    btn.disabled = false;
-                    btn.innerText = 'Register';
-                }
-            } catch (err) {
-                console.error('Registration error:', err);
-                alert('Connection error. Please check your internet connection.');
-                btn.disabled = false;
-                btn.innerText = 'Register';
-            }
-        });
-    }
+    );
 };
+
+export default UserRegister;

@@ -1,30 +1,25 @@
 /**
  * src/main.js
- * Entry point - MANUAL NAVIGATION VERSION
+ * Entry point - REACT ROUTER & ZERO-STORAGE VERSION
  */
 
-import App from './app.js';
-import Home from './pages/Home.js';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.jsx'; // Pointing to your new App.jsx
+import './styles/global.css'; // Importing your existing styles
 
-const initApp = async () => {
-    // 1. Initialize state (Checks localStorage for user session)
-    await App.init();
+// 1. Target the 'app' div from your index.html
+const container = document.getElementById('app');
 
-    // 2. Manual Initial Load
-    // We target the main 'app' div directly
-    const root = document.getElementById('app');
-    root.innerHTML = Home.render();
-    if (Home.afterRender) await Home.afterRender();
+// 2. Initialize the React Root
+const root = ReactDOM.createRoot(container);
 
-    // 3. Global Logout Listener
-    window.addEventListener('click', e => {
-        if (e.target && e.target.id === 'logout-btn') {
-            e.preventDefault();
-            App.handleLogout(); // Ensure this function clears localStorage and calls Home.render()
-        }
-    });
+// 3. Render the application
+// We wrap in StrictMode to help catch potential side effects during development
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
 
-    console.log('OKZ Sports: Manual Bootstrapping complete.');
-};
-
-window.addEventListener('DOMContentLoaded', initApp);
+console.log('OKZ Sports: React Bootstrapping complete.');

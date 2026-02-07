@@ -1,14 +1,13 @@
-<body>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OKZ Sports | Padel & Tennis Booking</title>
+  </head>
+  <body>
     <div id="app"></div>
 
-    <script type="module">
-        import Home from '/src/pages/Home.js';
-
-        // Entry point: Simply load the Home page on startup
-        window.addEventListener('load', async () => {
-            const app = document.getElementById('app');
-            app.innerHTML = await Home.render();
-            if (Home.afterRender) await Home.afterRender();
-        });
-    </script>
-</body>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

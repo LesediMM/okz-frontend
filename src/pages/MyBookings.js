@@ -1,128 +1,118 @@
-/**
- * src/pages/MyBookings.js
- * User Booking History Page - Zero Storage Frontend
- */
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 
-import UserLogin from './UserLogin.js';
-import Booking from './Booking.js';
+const MyBookings = ({ user }) => {
+    const navigate = useNavigate();
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-export default {
-    render: () => `
-        <div class="my-bookings-container">
-            <div class="booking-header">
-                <h2>My Bookings</h2>
-                <p>Enter your email to view your reservations</p>
-            </div>
-            
-            <div class="email-form">
-                <div class="form-group">
-                    <label for="mybookings-email">Your Email Address</label>
-                    <input type="email" id="mybookings-email" placeholder="Enter your registered email" required>
-                </div>
-                <button id="load-bookings-btn" class="btn btn-primary">View My Bookings</button>
-            </div>
-            
-            <div id="booking-list" class="booking-list">
-                <p class="loading">Enter your email above to fetch bookings...</p>
-            </div>
-        </div>
-    `,
+    // 1. Fetch Logic wrapped in useCallback to prevent unnecessary re-renders
+    const fetchBookings = useCallback(async () => {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
 
-    afterRender: async () => {
-        const container = document.getElementById('booking-list');
-        const appContainer = document.getElementById('app');
-        const loadBtn = document.getElementById('load-bookings-btn');
-        const emailInput = document.getElementById('mybookings-email');
-
-        loadBtn.addEventListener('click', async () => {
-            const userEmail = emailInput.value.trim();
-            
-            if (!userEmail) {
-                alert('Please enter your email address');
-                return;
-            }
-
-            // Validate email format
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(userEmail)) {
-                alert('Please enter a valid email address');
-                return;
-            }
-
-            container.innerHTML = '<p class="loading">Fetching your bookings...</p>';
-
-            try {
-                // FIXED: Use x-user-email header instead of query parameter
-                const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
-                    method: 'GET',
-                    headers: {
-                        'x-user-email': userEmail,  // Email goes in this header
-                        'Content-Type': 'application/json',
-                        'Origin': 'https://okz-frontend.onrender.com'
-                    }
-                });
-
-                const result = await response.json();
-                console.log('Bookings API Response:', result); // For debugging
-
-                if (response.ok && result.status === 'success') {
-                    const bookings = result.data.bookings;
-
-                    if (!bookings || bookings.length === 0) {
-                        container.innerHTML = `
-                            <div class="empty-state">
-                                <p>No bookings found for ${userEmail}. Ready to hit the court?</p>
-                                <button id="mybookings-to-book" class="btn btn-primary">Book a Court Now</button>
-                            </div>`;
-                        
-                        document.getElementById('mybookings-to-book')?.addEventListener('click', () => {
-                            appContainer.innerHTML = Booking.render();
-                            if (Booking.afterRender) Booking.afterRender();
-                        });
-                        return;
-                    }
-
-                    // Render the booking cards
-                    container.innerHTML = bookings.map(b => {
-                        let formattedDate;
-                        try {
-                            const dateObj = new Date(b.date);
-                            formattedDate = dateObj.toLocaleDateString('en-GB', {
-                                weekday: 'short',
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                            });
-                        } catch (e) {
-                            formattedDate = b.date || 'Date not available';
-                        }
-                        
-                        return `
-                        <div class="booking-card ${b.status === 'cancelled' ? 'cancelled' : ''}">
-                            <div class="booking-details">
-                                <span class="court-badge ${b.courtType}">${b.courtType.toUpperCase()}</span>
-                                <strong>Court ${b.courtNumber}</strong>
-                                <p class="booking-time">
-                                    📅 ${formattedDate}<br>
-                                    ⏰ ${b.timeSlot} (${b.duration} Hour${b.duration > 1 ? 's' : ''})
-                                </p>
-                            </div>
-                            <div class="booking-meta">
-                                <span class="status-badge status-${b.status}">${b.status.toUpperCase()}</span>
-                                <p class="booking-price">${b.totalPrice} EGP</p>
-                                ${b.paymentStatus === 'pending' ? '<span class="payment-warning">⚠️ Payment Pending</span>' : ''}
-                            </div>
-                        </div>
-                        `;
-                    }).join('');
-                    
-                } else {
-                    container.innerHTML = `<p class="error">Error: ${result.message || 'Failed to load bookings.'}</p>`;
+        try {
+            const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
+                method: 'GET',
+                headers: {
+                    'x-user-email': user.email,
+                    'Content-Type': 'application/json'
                 }
-            } catch (err) {
-                console.error('MyBookings Error:', err);
-                container.innerHTML = `<p class="error">Unable to connect to server. Please try again.</p>`;
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                setBookings(result.data.bookings || []);
+            } else {
+                setError(result.message || 'Failed to load bookings.');
             }
-        });
-    }
+        } catch (err) {
+            console.error('MyBookings Error:', err);
+            setError('Unable to connect to server. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    }, [user]);
+
+    // 2. Lifecycle: Fetch on mount
+    useEffect(() => {
+        fetchBookings();
+    }, [fetchBookings]);
+
+    // 3. Helper to format dates
+    const formatDate = (dateString) => {
+        try {
+            return new Date(dateString).toLocaleDateString('en-GB', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch (e) {
+            return dateString;
+        }
+    };
+
+    return (
+        <div className="my-bookings-container">
+            <div className="booking-header">
+                <h2>My Bookings</h2>
+                {user ? (
+                    <p>Viewing reservations for <strong>{user.email}</strong></p>
+                ) : (
+                    <div className="auth-alert">
+                        <p>Please login to view your reservations.</p>
+                        <Link to="/login" className="btn btn-primary">Login Now</Link>
+                    </div>
+                )}
+            </div>
+
+            {loading && <p className="loading">Fetching your bookings...</p>}
+            
+            {error && <p className="error-text">{error}</p>}
+
+            {!loading && user && (
+                <div className="booking-list">
+                    {bookings.length > 0 ? (
+                        bookings.map((b) => (
+                            <div key={b._id} className={`booking-card ${b.status === 'cancelled' ? 'cancelled' : ''}`}>
+                                <div className="booking-details">
+                                    <span className={`court-badge badge-${b.courtType}`}>
+                                        {b.courtType.toUpperCase()}
+                                    </span>
+                                    <strong>Court {b.courtNumber}</strong>
+                                    <p className="booking-time">
+                                        📅 {formatDate(b.date)}<br />
+                                        ⏰ {b.timeSlot} ({b.duration} Hour{b.duration > 1 ? 's' : ''})
+                                    </p>
+                                </div>
+                                <div className="booking-meta">
+                                    <span className={`status-badge status-${b.status}`}>
+                                        {b.status.toUpperCase()}
+                                    </span>
+                                    <p className="booking-price">{b.totalPrice} EGP</p>
+                                    {b.paymentStatus === 'pending' && (
+                                        <span className="payment-warning">⚠️ Payment Pending</span>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="empty-state">
+                            <p>No bookings found. Ready to hit the court?</p>
+                            <button onClick={() => navigate('/booking')} className="btn btn-primary">
+                                Book a Court Now
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 };
+
+export default MyBookings;

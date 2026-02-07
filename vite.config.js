@@ -1,57 +1,33 @@
-/**
- * vite.config.js
- * Configuration for OKZ Sports Frontend Deployment
- */
-
 import { defineConfig } from 'vite';
-import { resolve } from 'path';
+import react from '@vitejs/plugin-react';
 
+/**
+ * OKZ Sports - Vite Configuration
+ * Configured for React Router & JSX Support
+ */
 export default defineConfig({
-  // The root of the project where index.html is located
-  root: './',
+  // 1. Enable React Support (compiles JSX/TSX)
+  plugins: [react()],
 
-  // Base public path when served in production
-  base: '/',
-
-  build: {
-    // Output directory for the production build
-    outDir: 'dist',
-    
-    // Ensures the build fails if there are missing imports
-    emptyOutDir: true,
-
-    // Rollup specific configurations
-    rollupOptions: {
-      input: {
-        // Explicitly define index.html as the main entry point
-        main: resolve(__dirname, 'index.html'),
-      },
-      output: {
-        // Organizes compiled assets into specific folders
-        entryFileNames: `assets/[name].[hash].js`,
-        chunkFileNames: `assets/[name].[hash].js`,
-        assetFileNames: `assets/[name].[hash].[ext]`
-      }
-    }
-  },
-
+  // 2. Server Settings
   server: {
-    // Port for local development
     port: 3000,
-    // Enables proxying if you want to avoid CORS issues during local dev
-    proxy: {
-      '/api': {
-        target: 'https://okz.onrender.com',
-        changeOrigin: true,
-        secure: true,
-      }
-    }
+    open: true, // Automatically opens browser on 'npm run dev'
+    cors: true,
   },
 
+  // 3. Build Settings
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    // Ensures clean builds for deployment to Render
+    emptyOutDir: true,
+  },
+
+  // 4. Resolve Aliases (Optional - makes imports cleaner)
   resolve: {
     alias: {
-      // Allows cleaner imports like '@/api/auth'
-      '@': resolve(__dirname, './src'),
+      '@': '/src',
     },
   },
 });

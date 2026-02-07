@@ -1,0 +1,167 @@
+/* --- Core Variables & Reset --- */
+:root {
+    --primary: #27ae60;      /* OKZ Green */
+    --primary-hover: #2ecc71;
+    --bg-dark: #0f172a;      /* Deep Slate */
+    --card-bg: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border: #334155;
+    --danger: #ef4444;
+  }
+  
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, sans-serif;
+  }
+  
+  body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    line-height: 1.6;
+  }
+  
+  /* --- Base Layout --- */
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  
+  .navbar {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  
+  .nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+  
+  .nav-brand {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    text-decoration: none;
+    letter-spacing: -1px;
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+  
+  .nav-links a, .nav-btn-link {
+    text-decoration: none;
+    color: var(--text-main);
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+  }
+  
+  .nav-links a:hover {
+    color: var(--primary);
+  }
+  
+  .content {
+    flex: 1;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+  
+  /* --- Adaptable Grid System --- */
+  .dashboard-grid, .portal-grid, .booking-form-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr; /* Default Mobile */
+  }
+  
+  @media (min-width: 768px) {
+    .dashboard-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .booking-form-grid {
+      grid-template-columns: 350px 1fr;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .dashboard-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  
+  /* --- UI Components --- */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+  
+  .btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.1s, opacity 0.2s;
+  }
+  
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  
+  .btn-secondary { background: var(--border); color: var(--text-main); }
+  
+  .btn-block { width: 100%; }
+  
+  /* --- Forms --- */
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
+  input, select {
+    width: 100%;
+    padding: 0.75rem;
+    background: #0f172a;
+    border: 1px solid var(--border);
+    color: white;
+    border-radius: 6px;
+  }
+  
+  /* --- Mobile Adaptability Overrides --- */
+  @media (max-width: 768px) {
+    .nav-links {
+      gap: 0.8rem;
+    }
+    
+    .nav-links span { display: none; } /* Hide text labels if needed */
+    
+    .nav-brand { font-size: 1.2rem; }
+  
+    .content { padding: 1rem; }
+    
+    .slots-grid {
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)) !important;
+    }
+  }
+  
+  /* --- Footer --- */
+  .footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+  }

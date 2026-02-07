@@ -1,109 +1,95 @@
-/**
- * src/pages/UserLogin.js
- * MANUAL ROUTING VERSION - Zero Storage Frontend
- */
-import UserDashboard from './UserDashboard.js';
-import Home from './Home.js';
-import UserRegister from './UserRegister.js';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 
-export default {
-    render: () => `
-        <div class="auth-page">
-            <nav class="simple-nav">
-                <button id="back-home-btn" class="btn-link">← Back to Home</button>
+const UserLogin = ({ onLoginSuccess }) => {
+    const navigate = useNavigate();
+    
+    // Local UI state
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const response = await fetch('https://okz.onrender.com/api/v1/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                // ✅ Update Zero-Storage state in App.jsx
+                // result.data should contain the user object (email, fullName, etc.)
+                onLoginSuccess(result.data.user);
+                
+                // Navigate using React Router
+                navigate('/dashboard');
+            } else {
+                alert(result.message || 'Login failed. Check your credentials.');
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error('Login Error:', error);
+            alert('Network error. Please try again later.');
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="auth-page">
+            <nav className="simple-nav">
+                <Link to="/" className="btn-link">← Back to Home</Link>
             </nav>
             
-            <div class="auth-container">
+            <div className="auth-container">
                 <h2>Login to OKZ Sports</h2>
-                <form id="login-form">
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" placeholder="name@example.com" required>
+                <form onSubmit={handleSubmit} id="login-form">
+                    <div className="form-group">
+                        <label htmlFor="email">Email Address</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="name@example.com" 
+                            required 
+                        />
                     </div>
                     
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" placeholder="Enter your password" required>
+                    <div className="form-group">
+                        <label htmlFor="password">Password</label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter your password" 
+                            required 
+                        />
                     </div>
                     
-                    <button type="submit" id="login-btn" class="btn btn-primary">Login</button>
+                    <button 
+                        type="submit" 
+                        disabled={loading} 
+                        className="btn btn-primary"
+                    >
+                        {loading ? 'Logging in...' : 'Login'}
+                    </button>
                 </form>
                 
-                <p class="auth-footer">
-                    Don't have an account? <button id="to-register-btn" class="btn-link">Register here</button>
+                <p className="auth-footer">
+                    Don't have an account? <Link to="/register" className="btn-link">Register here</Link>
                 </p>
             </div>
         </div>
-    `,
-
-    afterRender: () => {
-        const form = document.getElementById('login-form');
-        const btn = document.getElementById('login-btn');
-        const backBtn = document.getElementById('back-home-btn');
-        const regBtn = document.getElementById('to-register-btn');
-        const appContainer = document.getElementById('app');
-
-        // --- MANUAL NAVIGATION HANDLERS ---
-        backBtn.addEventListener('click', () => {
-            appContainer.innerHTML = Home.render();
-            if (Home.afterRender) Home.afterRender();
-        });
-
-        regBtn.addEventListener('click', () => {
-            appContainer.innerHTML = UserRegister.render();
-            if (UserRegister.afterRender) UserRegister.afterRender();
-        });
-
-        // --- FORM SUBMISSION LOGIC ---
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-
-            btn.disabled = true;
-            btn.textContent = 'Logging in...';
-
-            try {
-                const response = await fetch('https://okz.onrender.com/api/v1/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Origin': 'https://okz-frontend.onrender.com'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const result = await response.json();
-
-                if (response.ok && result.status === 'success') {
-                    // ✅ NO STORAGE - just navigate
-                    console.log('✅ Login successful!');
-                    
-                    // Navigate to Dashboard
-                    appContainer.innerHTML = UserDashboard.render();
-                    
-                    if (UserDashboard.afterRender) {
-                        try {
-                            await UserDashboard.afterRender();
-                        } catch (err) {
-                            console.error('Dashboard afterRender error:', err);
-                        }
-                    }
-                    
-                } else {
-                    const errorMessage = result.message || 'Login failed. Please check your credentials.';
-                    alert(`Login failed: ${errorMessage}`);
-                    btn.disabled = false;
-                    btn.textContent = 'Login';
-                }
-
-            } catch (error) {
-                console.error('Login Error:', error);
-                alert('Network error. Please check your internet connection.');
-                btn.disabled = false;
-                btn.textContent = 'Login';
-            }
-        });
-    }
+    );
 };
+
+export default UserLogin;
