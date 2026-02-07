@@ -37,6 +37,7 @@
     100% { background-position: 0% 50%; }
   }
   
+  /* Core Glassmorphism Component */
   .glass-panel {
     background: var(--glass-bg);
     backdrop-filter: blur(var(--blur)) saturate(180%);
@@ -46,6 +47,96 @@
     box-shadow: var(--glass-shadow);
   }
   
+  /* --- Navigation Shell Styles --- */
+  .navbar {
+    background: rgba(255, 255, 255, 0.4) !important;
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+    height: 64px;
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 9999;
+  }
+  
+  .nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  
+  .nav-brand {
+    font-weight: 850;
+    font-size: 1.3rem;
+    color: var(--brand-navy);
+    text-decoration: none;
+    letter-spacing: -1px;
+  }
+  
+  .brand-dot { color: var(--system-blue); }
+  
+  .nav-links {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  
+  .nav-item {
+    text-decoration: none;
+    color: var(--text-main);
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: opacity 0.2s;
+  }
+  
+  .nav-item:hover { opacity: 0.6; }
+  
+  .nav-cta-pill {
+    background: var(--brand-navy);
+    color: white !important;
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 0.8rem !important;
+    text-decoration: none;
+  }
+  
+  .logout-link {
+    background: transparent;
+    border: none;
+    color: var(--system-red);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  
+  .logout-link:hover { opacity: 0.7; }
+  
+  .nav-profile-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--brand-navy);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    box-shadow: 0 4px 10px rgba(26, 43, 86, 0.15);
+  }
+  
+  .content-viewport {
+    min-height: calc(100vh - 64px);
+  }
+  
+  /* --- Universal Components --- */
   .btn-primary {
     background: var(--brand-navy) !important;
     color: white !important;
@@ -65,4 +156,11 @@
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Mobile Adjustments */
+  @media (max-width: 600px) {
+    .nav-container { padding: 0 16px; }
+    .nav-links { gap: 14px; }
+    .nav-brand { font-size: 1.1rem; }
   }

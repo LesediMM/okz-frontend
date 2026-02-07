@@ -1,12 +1,11 @@
 import React from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import '../styles/global.css';
-import '../styles/Layout.css';
+import '../styles/global.css'; // This now handles all layout and navigation styles
 
 /**
  * Layout Component
- * Provides the global navigation shell with frosted glass (blur) effects
- * and handles the responsive navigation state.
+ * Provides the global navigation shell with frosted glass (blur) effects.
+ * Consolidated styling into global.css to ensure build stability on Render.
  */
 const Layout = ({ user, isAuthenticated, onLogout }) => {
   const navigate = useNavigate();
@@ -57,13 +56,10 @@ const Layout = ({ user, isAuthenticated, onLogout }) => {
       </nav>
 
       {/* --- Page Content Injection --- */}
-      {/* Outlet renders the child routes (Home, Booking, etc.) */}
+      {/* Outlet renders the child routes (Home, Booking, MyBookings, etc.) */}
       <main className="content-viewport">
         <Outlet /> 
       </main>
-
-      {/* Minimalist Footers are defined within specific page components 
-          to maintain the focused "Single Card" aesthetic. */}
     </div>
   );
 };
