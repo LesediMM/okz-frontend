@@ -151,7 +151,6 @@ export default {
                             headers: { 
                                 'Content-Type': 'application/json',
                                 'x-user-email': userEmail,
-                                'X-User-Email': userEmail,
                                 'Origin': 'https://okz-frontend.onrender.com'
                             },
                             body: JSON.stringify(bookingData)
