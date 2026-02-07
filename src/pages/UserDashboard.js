@@ -94,14 +94,19 @@ export default {
         try {
             const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
                 method: 'GET',
+                mode: 'cors', // Explicit CORS mode
                 headers: {
-                    'x-user-id': userId,
+                    'Authorization': userId, // CHANGED from 'x-user-id'
                     'Origin': 'https://okz-frontend.onrender.com',
                     'Content-Type': 'application/json'
                 }
             });
 
+            console.log('Dashboard fetch - Status:', response.status);
+            console.log('Dashboard fetch - Headers:', [...response.headers.entries()]);
+
             const res = await response.json();
+            console.log('Dashboard fetch - Response:', res);
 
             if (response.ok && res.status === 'success' && res.data.bookings.length > 0) {
                 const latest = res.data.bookings.slice(0, 3);
@@ -130,7 +135,7 @@ export default {
             }
         } catch (error) {
             console.error('Dashboard Activity Error:', error);
-            summaryContainer.innerHTML = `<p class="error-text">Unable to load activity.</p>`;
+            summaryContainer.innerHTML = `<p class="error-text">Unable to load activity: ${error.message}</p>`;
         }
     }
 };
