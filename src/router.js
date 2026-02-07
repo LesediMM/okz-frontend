@@ -14,7 +14,7 @@ import AdminLogin from './pages/AdminLogin.js';
 import AdminDashboard from './pages/AdminDashboard.js';
 import AdminBookings from './pages/AdminBookings.js';
 
-// Route Map
+// Route Map - Using explicit hash keys to prevent mismatch
 const routes = {
     '/': Home,
     '/login': UserLogin,
@@ -31,11 +31,16 @@ const routes = {
  * Main Router Function
  */
 export const router = async () => {
-    // 1. Get the current path from the URL hash
-    // Example: "#/booking" becomes "/booking"
-    const path = window.location.hash.slice(1).toLowerCase() || '/';
+    // 1. Get the current path
+    // This logic ensures that "#/booking" becomes "/booking"
+    let path = window.location.hash.slice(1).toLowerCase() || '/';
+    
+    // Safety check: if path doesn't start with /, add it
+    if (!path.startsWith('/')) {
+        path = '/' + path;
+    }
 
-    // 2. Find the matching page component or default to Home
+    // 2. Find the matching page
     const page = routes[path] || Home;
 
     // 3. Select the app container
@@ -43,23 +48,26 @@ export const router = async () => {
 
     try {
         // 4. Render the page content inside the global layout
-        // Each page component is expected to have a .render() method
         const pageHTML = await page.render();
         appContainer.innerHTML = App.renderLayout(pageHTML);
 
-        // 5. Execute post-render logic (event listeners, API calls)
-        // Each page component can optionally have an .afterRender() method
+        // 5. CRITICAL: Initialize Navbar Events (Logout button, etc.)
+        if (App.attachLayoutEvents) {
+            App.attachLayoutEvents();
+        }
+
+        // 6. EXECUTE PAGE LOGIC (This is what makes the Booking buttons appear!)
         if (page.afterRender) {
             await page.afterRender();
         }
 
-        // Scroll to top on navigation
+        // Scroll to top
         window.scrollTo(0, 0);
 
     } catch (error) {
         console.error('Routing Error:', error);
         appContainer.innerHTML = App.renderLayout(`
-            <div class="error-page">
+            <div class="error-page" style="text-align:center; padding: 50px;">
                 <h1>Oops!</h1>
                 <p>Something went wrong while loading this page.</p>
                 <a href="#/">Return Home</a>
@@ -67,3 +75,7 @@ export const router = async () => {
         `);
     }
 };
+
+// Listen for hash changes and page load
+window.addEventListener('hashchange', router);
+window.addEventListener('load', router);
