@@ -1,6 +1,7 @@
 /**
  * src/pages/UserLogin.js
  * MANUAL ROUTING VERSION - Direct component injection
+ * ULTRA-SIMPLE 200 OK NAVIGATION
  */
 
 import UserDashboard from './UserDashboard.js';
@@ -42,12 +43,9 @@ export default {
         const btn = document.getElementById('login-btn');
         const backBtn = document.getElementById('back-home-btn');
         const regBtn = document.getElementById('to-register-btn');
-        
-        // Target the main 'app' container used in your index.html
         const appContainer = document.getElementById('app');
 
         // --- MANUAL NAVIGATION HANDLERS ---
-        
         backBtn.addEventListener('click', () => {
             appContainer.innerHTML = Home.render();
             if (Home.afterRender) Home.afterRender();
@@ -59,7 +57,6 @@ export default {
         });
 
         // --- FORM SUBMISSION LOGIC ---
-
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -79,32 +76,24 @@ export default {
                     body: JSON.stringify({ email, password })
                 });
 
-                const data = await response.json();
-                
+                // --- ULTRA SIMPLE NAVIGATION ---
+                // ONLY REQUIRE 200 OK TO GO TO DASHBOARD
                 if (response.ok) {
-                    if (data.data && data.data.userId) {
-                        // 1. Persist Session
-                        localStorage.setItem('okz_user_id', data.data.userId);
-                        localStorage.setItem('user', JSON.stringify(data.data.user || {}));
-                        
-                        // 2. MANUAL SWAP: Inject Dashboard
-                        appContainer.innerHTML = UserDashboard.render();
-                        
-                        // 3. TRIGGER LOGIC: Run Dashboard logic (API calls, etc.)
-                        if (UserDashboard.afterRender) {
+                    appContainer.innerHTML = UserDashboard.render();
+                    if (UserDashboard.afterRender) {
+                        try {
                             await UserDashboard.afterRender();
+                        } catch (err) {
+                            console.error('Dashboard afterRender error:', err);
                         }
-                    } else {
-                        alert('Login successful but no user data received.');
-                        btn.disabled = false;
-                        btn.textContent = 'Login';
                     }
                 } else {
-                    alert(data.message || 'Login failed. Please check your credentials.');
+                    // Optional: simple alert for failed login
+                    alert('Login failed. Please check your credentials.');
                     btn.disabled = false;
                     btn.textContent = 'Login';
                 }
-                
+
             } catch (error) {
                 console.error('Login Error:', error);
                 alert('Network error. Please check your internet connection.');
