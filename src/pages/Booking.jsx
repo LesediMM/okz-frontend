@@ -15,16 +15,44 @@ const Booking = ({ user }) => {
 
     const [isProcessing, setIsProcessing] = useState(false);
 
+    // Helper functions for date constraints
+    const getToday = () => new Date().toISOString().split('T')[0];
+    const getMaxDate = () => {
+        const d = new Date();
+        d.setDate(d.getDate() + 30);
+        return d.toISOString().split('T')[0];
+    };
+
     // Court Mapping - Synced with Backend
     const courts = bookingData.courtType === 'paddle' 
         ? [{ v: 1, t: 'Paddle Court 1' }, { v: 2, t: 'Paddle Court 2' }]
         : [{ v: 3, t: 'Tennis Court 1' }, { v: 4, t: 'Tennis Court 2' }, { v: 5, t: 'Tennis Court 3' }];
 
-    const timeSlots = [];
-    for (let hour = 8; hour <= 21; hour++) {
-        timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
-        timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
-    }
+    // Smart Time Slot Filtering
+    const generateAvailableSlots = () => {
+        const slots = [];
+        const now = new Date();
+        const isToday = bookingData.date === now.toISOString().split('T')[0];
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+
+        for (let hour = 8; hour < 22; hour++) { // 🛡️ Sync with OPERATING_HOURS.end: 22
+            for (let minute of ['00', '30']) {
+                const timeStr = `${hour.toString().padStart(2, '0')}:${minute}`;
+                
+                // 🛡️ Filter out times that have already passed if the date is today
+                if (isToday) {
+                    if (hour < currentHour || (hour === currentHour && parseInt(minute) <= currentMinute)) {
+                        continue; // Skip past times
+                    }
+                }
+                slots.push(timeStr);
+            }
+        }
+        return slots;
+    };
+
+    const timeSlots = generateAvailableSlots();
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -68,14 +96,16 @@ const Booking = ({ user }) => {
                 // Success case
                 navigate('/my-bookings'); 
             } else { 
-                // Handle backend validation errors (e.g., 400 Bad Request)
-                const errorMsg = data.errors ? data.errors[0].message : (data.message || "Slot unavailable");
-                alert(`Booking Failed: ${errorMsg}`); 
+                // 🛡️ Handle the specific array format from your express-validator
+                const errorMessage = data.errors 
+                    ? data.errors.map(e => e.message).join(", ") 
+                    : data.message;
+                alert(`Validation Error: ${errorMessage}`); 
             }
         } catch (e) { 
             // Handle Network failures
             console.error("Connection Error:", e);
-            alert("Network error. Please check your connection and try again."); 
+            alert("Connection error. The server might be waking up."); 
         } finally { 
             // 🛡️ Guard 4: The "Loading" Killer (Always reset state)
             setIsProcessing(false); 
@@ -111,7 +141,8 @@ const Booking = ({ user }) => {
                             <input 
                                 type="date" 
                                 name="date" 
-                                min={new Date().toISOString().split('T')[0]} 
+                                min={getToday()} 
+                                max={getMaxDate()} // 🛡️ Prevents "30 days in advance" error
                                 value={bookingData.date} 
                                 onChange={handleInputChange} 
                             />
