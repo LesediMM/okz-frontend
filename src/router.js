@@ -1,6 +1,6 @@
 /**
  * src/router.js
- * SPA Hash-based Router for OKZ Sports
+ * SPA Hash-based Router for OKZ Sports - Protected Routes Update
  */
 
 import App from './app.js';
@@ -14,7 +14,10 @@ import AdminLogin from './pages/AdminLogin.js';
 import AdminDashboard from './pages/AdminDashboard.js';
 import AdminBookings from './pages/AdminBookings.js';
 
-// Route Map - Using explicit hash keys to prevent mismatch
+// Define which routes require the user to be logged in (User ID system)
+const protectedRoutes = ['/booking', '/my-bookings', '/dashboard'];
+const adminRoutes = ['/admin/dashboard', '/admin/bookings'];
+
 const routes = {
     '/': Home,
     '/login': UserLogin,
@@ -27,41 +30,45 @@ const routes = {
     '/admin/bookings': AdminBookings
 };
 
-/**
- * Main Router Function
- */
 export const router = async () => {
-    // 1. Get the current path
-    // This logic ensures that "#/booking" becomes "/booking"
     let path = window.location.hash.slice(1).toLowerCase() || '/';
-    
-    // Safety check: if path doesn't start with /, add it
-    if (!path.startsWith('/')) {
-        path = '/' + path;
+    if (!path.startsWith('/')) path = '/' + path;
+
+    // --- NAVIGATION GUARD ---
+    const userId = localStorage.getItem('okz_user_id');
+    const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+    // 1. If route is protected and no User ID, redirect to login
+    if (protectedRoutes.includes(path) && !userId) {
+        window.location.hash = '#/login';
+        return;
     }
 
-    // 2. Find the matching page
-    const page = routes[path] || Home;
+    // 2. If route is admin and not an admin, redirect to admin login
+    if (adminRoutes.includes(path) && !isAdmin) {
+        window.location.hash = '#/admin/login';
+        return;
+    }
 
-    // 3. Select the app container
+    // 3. Find the matching page
+    const page = routes[path] || Home;
     const appContainer = document.getElementById('app');
 
     try {
-        // 4. Render the page content inside the global layout
+        // Render inside Layout (Passes current state to Navbar)
         const pageHTML = await page.render();
         appContainer.innerHTML = App.renderLayout(pageHTML);
 
-        // 5. CRITICAL: Initialize Navbar Events (Logout button, etc.)
+        // Attach layout events (Logout button)
         if (App.attachLayoutEvents) {
             App.attachLayoutEvents();
         }
 
-        // 6. EXECUTE PAGE LOGIC (This is what makes the Booking buttons appear!)
+        // Execute specific page logic
         if (page.afterRender) {
             await page.afterRender();
         }
 
-        // Scroll to top
         window.scrollTo(0, 0);
 
     } catch (error) {
@@ -76,6 +83,5 @@ export const router = async () => {
     }
 };
 
-// Listen for hash changes and page load
 window.addEventListener('hashchange', router);
 window.addEventListener('load', router);

@@ -1,6 +1,6 @@
 /**
  * src/main.js
- * Entry point for OKZ Sports Frontend
+ * Entry point for OKZ Sports Frontend - User ID System Ready
  */
 
 import App from './app.js';
@@ -10,30 +10,35 @@ import { router } from './router.js';
  * Main Application Bootstrapper
  */
 const initApp = async () => {
-    // 1. Initialize global application state (Auth check)
-    // This calls the backend status endpoint: https://okz.onrender.com/api/v1/login/status
+    // 1. Initialize global application state
+    // This checks localStorage for 'okz_user_id' and 'user' data
     await App.init();
 
     // 2. Initial route handling
-    // Load the correct page based on the current URL hash (e.g., #/login)
+    // Load the correct page based on current hash
     await router();
 
     // 3. Global Event Listeners
     
-    // Listen for URL hash changes to trigger the router
-    window.addEventListener('hashchange', router);
+    // Trigger router whenever the URL hash changes
+    window.addEventListener('hashchange', async () => {
+        await router();
+    });
 
-    // Global Logout Listener
-    // Since we use event delegation, we listen for clicks on the body
-    document.body.addEventListener('click', e => {
-        if (e.target.id === 'logout-btn') {
+    /**
+     * LOGOUT DELEGATION
+     * Since the navbar is re-rendered on every route change, 
+     * we attach a single listener to the window to catch logout clicks.
+     */
+    window.addEventListener('click', e => {
+        if (e.target && e.target.id === 'logout-btn') {
             e.preventDefault();
             App.handleLogout();
         }
     });
 
-    console.log('OKZ Sports: Application fully loaded and routing active.');
+    console.log('OKZ Sports: Bootstrapping complete.');
 };
 
-// Start the app when the DOM is ready
+// Start the app
 window.addEventListener('DOMContentLoaded', initApp);

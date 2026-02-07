@@ -1,6 +1,6 @@
 /**
  * src/app.js
- * Core Application Logic & Global State
+ * Core Application Logic & Global State - Updated for User ID System
  */
 
 const App = {
@@ -12,20 +12,21 @@ const App = {
 
     /**
      * Initialize the application state
-     * Checks if the user has a valid session on load
+     * Checks if the user has a valid ID session on load
      */
     async init() {
-        console.log('OKZ Sports App Initializing...');
+        console.log('OKZ Sports App Initializing (User ID System)...');
         
-        const token = localStorage.getItem('accessToken');
+        // FIX: Look for okz_user_id instead of accessToken
+        const userId = localStorage.getItem('okz_user_id');
         const savedUser = localStorage.getItem('user');
         
-        // If we have a token and user data, restore the session
-        if (token && savedUser) {
+        // If we have a userId, the session is valid in this system
+        if (userId && savedUser) {
             try {
                 this.state.user = JSON.parse(savedUser);
                 this.state.isAuthenticated = true;
-                console.log('Session restored for:', this.state.user.email);
+                console.log('Session restored for User ID:', userId);
             } catch (e) {
                 console.error('Failed to parse saved user data');
                 this.handleLogout();
@@ -37,10 +38,9 @@ const App = {
      * Returns a global layout wrapper
      */
     renderLayout(content) {
-        // Safe check for the user's name to display in the logout button
         const firstName = this.state.user?.fullName 
             ? this.state.user.fullName.split(' ')[0] 
-            : 'User';
+            : 'Player';
 
         return `
             <nav class="navbar">
@@ -68,25 +68,37 @@ const App = {
     },
 
     /**
-     * Logic to attach event listeners to the layout (like the logout button)
+     * Logic to attach event listeners to the layout
      */
     attachLayoutEvents() {
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => this.handleLogout());
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleLogout();
+            });
         }
     },
 
+    /**
+     * FIX: Updated to clear the specific User ID keys
+     */
     handleLogout() {
-        console.log('Logging out...');
-        localStorage.removeItem('accessToken');
+        console.log('Clearing User ID session...');
+        
+        // Clear new system keys
+        localStorage.removeItem('okz_user_id');
         localStorage.removeItem('user');
-        localStorage.removeItem('isAdmin'); // Clear admin flag if present
+        
+        // Clear legacy keys just in case
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('isAdmin'); 
+        
         this.state.user = null;
         this.state.isAuthenticated = false;
         
-        // Redirect to login and refresh to clear any sensitive data in memory
-        window.location.hash = '#/login';
+        // Redirect to home and refresh to reset state
+        window.location.hash = '#/';
         window.location.reload();
     }
 };

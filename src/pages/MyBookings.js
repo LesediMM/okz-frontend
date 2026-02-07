@@ -1,6 +1,6 @@
 /**
  * src/pages/MyBookings.js
- * User Booking History Page - Simplified (No external API imports)
+ * User Booking History Page - Updated for User ID System
  */
 
 export default {
@@ -18,10 +18,11 @@ export default {
 
     afterRender: async () => {
         const container = document.getElementById('booking-list');
-        const token = localStorage.getItem('accessToken');
+        
+        // 1. Get User ID from localStorage
+        const userId = localStorage.getItem('okz_user_id');
 
-        // 1. Check if user is logged in
-        if (!token) {
+        if (!userId) {
             container.innerHTML = `
                 <div class="auth-notice">
                     <p>Please <a href="#/login">login</a> to view your court reservations.</p>
@@ -30,11 +31,12 @@ export default {
         }
 
         try {
-            // 2. Fetch bookings directly from the backend
-            const response = await fetch('https://okz.onrender.com/api/v1/bookings/my-bookings', {
+            // 2. Fetch using correct endpoint and x-user-id header
+            const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    'x-user-id': userId,
+                    'Origin': 'https://okz-frontend.onrender.com',
                     'Content-Type': 'application/json'
                 }
             });
@@ -44,7 +46,7 @@ export default {
             if (response.ok && result.status === 'success') {
                 const bookings = result.data.bookings;
 
-                if (bookings.length === 0) {
+                if (!bookings || bookings.length === 0) {
                     container.innerHTML = `
                         <div class="empty-state">
                             <p>No bookings found. Ready to hit the court?</p>
@@ -53,20 +55,21 @@ export default {
                     return;
                 }
 
-                // 3. Render the booking cards
+                // 3. Render the booking cards using backend data structure
                 container.innerHTML = bookings.map(b => `
                     <div class="booking-card">
                         <div class="booking-details">
-                            <span class="court-badge">${b.courtNumber <= 2 ? 'PADDLE' : 'TENNIS'}</span>
+                            <span class="court-badge">${b.courtType.toUpperCase()}</span>
                             <strong>Court ${b.courtNumber}</strong>
                             <p class="booking-time">
-                                📅 ${new Date(b.date).toLocaleDateString()} <br>
+                                📅 ${b.date} <br>
                                 ⏰ ${b.timeSlot} (${b.duration} Hour${b.duration > 1 ? 's' : ''})
                             </p>
                         </div>
                         <div class="booking-meta">
                             <span class="status-badge status-${b.status}">${b.status.toUpperCase()}</span>
-                            <p class="booking-price">${b.price * b.duration} EGP</p>
+                            <p class="booking-price">${b.totalPrice} EGP</p>
+                            ${b.paymentStatus === 'pending' ? '<span class="payment-warning">Payment Pending</span>' : ''}
                         </div>
                     </div>
                 `).join('');
@@ -75,7 +78,7 @@ export default {
             }
         } catch (err) {
             console.error('MyBookings Error:', err);
-            container.innerHTML = `<p class="error">Unable to connect to server. Please try again later.</p>`;
+            container.innerHTML = `<p class="error">Unable to connect to server. Please ensure the backend is running.</p>`;
         }
     }
 };

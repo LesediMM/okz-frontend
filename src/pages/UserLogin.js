@@ -1,6 +1,6 @@
 /**
  * src/pages/UserLogin.js
- * User Authentication Page - Fixed & Verified
+ * User Authentication Page - Updated for User ID System
  */
 
 export default {
@@ -39,7 +39,6 @@ export default {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // 1. Loading State
             btn.disabled = true;
             btn.innerText = 'Authenticating...';
 
@@ -49,11 +48,11 @@ export default {
             };
 
             try {
-                // 2. Call Auth API
                 const response = await fetch('https://okz.onrender.com/api/v1/login', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Origin': 'https://okz-frontend.onrender.com'
                     },
                     body: JSON.stringify(credentials)
                 });
@@ -62,35 +61,37 @@ export default {
 
                 if (response.ok && res.status === 'success') {
                     /**
-                     * FIXED LOGIC:
-                     * Backend might send token as res.token OR res.data.token
-                     * Backend might send user as res.user OR res.data.user
+                     * USER ID SYSTEM UPDATE:
+                     * We no longer use tokens. We store the userId directly.
                      */
-                    const token = res.token || (res.data && res.data.token);
-                    const user = res.user || (res.data && res.data.user);
+                    const userId = res.data && res.data.userId;
+                    const userData = res.data && res.data.user;
 
-                    if (!token) {
-                        throw new Error('Token missing from server response');
+                    if (!userId) {
+                        throw new Error('User ID missing from server response');
                     }
 
-                    // 3. Store Auth Data securely
-                    localStorage.setItem('accessToken', token);
-                    localStorage.setItem('user', JSON.stringify(user || { email: credentials.email }));
+                    // 1. Store ID for API authentication headers
+                    localStorage.setItem('okz_user_id', userId);
+                    
+                    // 2. Store User details for UI display
+                    localStorage.setItem('user', JSON.stringify(userData || { email: credentials.email }));
 
-                    // 4. Redirect & Refresh
-                    // We use hash change first, then reload to ensure App.js sees the new localStorage
+                    // 3. Clear any old tokens just in case
+                    localStorage.removeItem('accessToken');
+
+                    // 4. Redirect
                     window.location.hash = '#/booking';
                     window.location.reload();
                     
                 } else {
-                    // Handle "Invalid credentials" or other errors
-                    alert(res.message || 'Login failed. Please check your email and password.');
+                    alert(res.message || 'Login failed. Please check your credentials.');
                     btn.disabled = false;
                     btn.innerText = 'Login';
                 }
             } catch (err) {
                 console.error('Login error:', err);
-                alert('An unexpected error occurred. Please verify your credentials and try again.');
+                alert('Connection error. Please try again.');
                 btn.disabled = false;
                 btn.innerText = 'Login';
             }

@@ -1,6 +1,6 @@
 /**
  * src/pages/UserRegister.js
- * User Registration Page - Simplified (No external API imports)
+ * User Registration Page - Updated for User ID System
  */
 
 export default {
@@ -48,11 +48,9 @@ export default {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // 1. Enter Loading State
             btn.disabled = true;
             btn.innerText = 'Creating Account...';
 
-            // 2. Extract data directly from form elements
             const userData = {
                 fullName: document.getElementById('fullName').value.trim(),
                 email: document.getElementById('email').value.trim(),
@@ -60,12 +58,13 @@ export default {
                 phoneNumber: document.getElementById('phoneNumber').value.trim()
             };
 
-            // 3. Call the API directly using fetch
             try {
                 const response = await fetch('https://okz.onrender.com/api/v1/register', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        // Explicitly include Origin for live CORS compliance
+                        'Origin': 'https://okz-frontend.onrender.com'
                     },
                     body: JSON.stringify(userData)
                 });
@@ -73,17 +72,25 @@ export default {
                 const res = await response.json();
 
                 if (response.ok && res.status === 'success') {
-                    alert('Registration successful! Redirecting to login...');
+                    // NEW: Store the User ID immediately in localStorage
+                    // This matches the data structure from your successful CURL test
+                    if (res.data && res.data.user && res.data.user.userId) {
+                        localStorage.setItem('okz_user_id', res.data.user.userId);
+                        localStorage.setItem('okz_user_email', res.data.user.email);
+                    }
+
+                    alert('Registration successful!');
+                    
+                    // You can redirect to login, or straight to dashboard since we have the ID
                     window.location.hash = '#/login';
                 } else {
-                    // This catches backend validation errors (regex, existing email, etc.)
-                    alert(res.message || 'Registration failed. Please check your details.');
+                    alert(res.message || 'Registration failed.');
                     btn.disabled = false;
                     btn.innerText = 'Register';
                 }
             } catch (err) {
                 console.error('Registration error:', err);
-                alert('A network error occurred. Please try again.');
+                alert('Connection error. Please ensure the backend is live.');
                 btn.disabled = false;
                 btn.innerText = 'Register';
             }

@@ -94,9 +94,10 @@ export default {
             };
 
             bookButton.onclick = async () => {
-                const token = localStorage.getItem('accessToken');
-                if (!token) {
-                    alert("Please login first!");
+                // UPDATE: Retrieve okz_user_id instead of token
+                const userId = localStorage.getItem('okz_user_id');
+                if (!userId) {
+                    alert("Session expired. Please login again.");
                     window.location.hash = '#/login';
                     return;
                 }
@@ -188,7 +189,7 @@ export default {
                     return;
                 }
 
-                bookButton.innerText = "Booking...";
+                bookButton.innerText = "Processing...";
                 bookButton.disabled = true;
 
                 try {
@@ -196,7 +197,9 @@ export default {
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json', 
-                            'Authorization': `Bearer ${token}` 
+                            // UPDATE: Use the custom header and Origin required for production
+                            'x-user-id': userId,
+                            'Origin': 'https://okz-frontend.onrender.com'
                         },
                         body: JSON.stringify(bookingData)
                     });
@@ -204,7 +207,7 @@ export default {
                     const responseData = await res.json();
                     
                     if (res.ok) { 
-                        alert("Booking successful!"); 
+                        alert("Court reserved successfully!"); 
                         window.location.hash = '#/my-bookings'; 
                     } else { 
                         // Show specific error message from backend if available
@@ -215,7 +218,7 @@ export default {
                         bookButton.classList.add('active');
                     }
                 } catch (e) { 
-                    alert("Network error. Please check your connection."); 
+                    alert("Network error. Check your connection."); 
                     bookButton.innerText = "BOOK NOW";
                     bookButton.disabled = false;
                     bookButton.classList.add('active');

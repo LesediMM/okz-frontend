@@ -1,6 +1,6 @@
 /**
  * src/pages/UserDashboard.js
- * Authenticated User Overview - Simplified (No external API imports)
+ * Authenticated User Overview - Updated for User ID System
  */
 
 import App from '../app.js';
@@ -10,12 +10,12 @@ export default {
      * Render the Dashboard layout
      */
     render: () => {
-        // 1. Get user from App state or LocalStorage fallback
+        // 1. Get user from LocalStorage
         const user = App.state.user || JSON.parse(localStorage.getItem('user') || '{}');
-        const token = localStorage.getItem('accessToken');
+        const userId = localStorage.getItem('okz_user_id');
 
-        // Redirect to login if no credentials found
-        if (!token) {
+        // REDIRECT: Use okz_user_id instead of accessToken
+        if (!userId) {
             window.location.hash = '#/login';
             return '';
         }
@@ -68,22 +68,24 @@ export default {
      */
     afterRender: async () => {
         const summaryContainer = document.getElementById('recent-bookings-summary');
-        const token = localStorage.getItem('accessToken');
+        const userId = localStorage.getItem('okz_user_id');
 
-        if (!token) return;
+        if (!userId) return;
 
         try {
-            // 2. Fetch directly from the backend
-            const response = await fetch('https://okz.onrender.com/api/v1/bookings/my-bookings', {
+            // 2. Fetch from the correct endpoint with x-user-id header
+            const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    'x-user-id': userId,
+                    'Origin': 'https://okz-frontend.onrender.com',
                     'Content-Type': 'application/json'
                 }
             });
 
             const res = await response.json();
 
+            // Your backend returns { status: 'success', data: { bookings: [...] } }
             if (response.ok && res.status === 'success' && res.data.bookings.length > 0) {
                 // Show only the 3 most recent bookings
                 const latest = res.data.bookings.slice(0, 3);
@@ -91,8 +93,9 @@ export default {
                     <ul class="mini-booking-list">
                         ${latest.map(b => `
                             <li>
-                                <strong>${b.courtNumber <= 2 ? 'PADDLE' : 'TENNIS'} Court ${b.courtNumber}</strong>
+                                <strong>${b.courtType.toUpperCase()} Court ${b.courtNumber}</strong>
                                 <span>${new Date(b.date).toLocaleDateString()} at ${b.timeSlot}</span>
+                                <span class="badge-${b.status}">${b.status}</span>
                             </li>
                         `).join('')}
                     </ul>

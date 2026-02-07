@@ -1,6 +1,6 @@
 /**
  * src/pages/Home.js
- * Entry Portal for OKZ Sports
+ * Entry Portal for OKZ Sports - Updated for User ID Session Detection
  */
 
 export default {
@@ -8,6 +8,9 @@ export default {
      * Render the selection portal
      */
     render: async () => {
+        // Check if user is already logged in using our new system
+        const isLoggedIn = !!localStorage.getItem('okz_user_id');
+
         return `
             <div class="home-portal">
                 <header class="portal-header">
@@ -29,8 +32,13 @@ export default {
                             <li>Match History Tracking</li>
                         </ul>
                         <div class="portal-actions">
-                            <a href="#/login" class="btn btn-primary">User Login</a>
-                            <a href="#/register" class="btn btn-outline">Create Account</a>
+                            ${isLoggedIn ? `
+                                <a href="#/booking" class="btn btn-primary">Go to Dashboard</a>
+                                <p class="welcome-back-msg">Logged in and ready to play!</p>
+                            ` : `
+                                <a href="#/login" class="btn btn-primary">User Login</a>
+                                <a href="#/register" class="btn btn-outline">Create Account</a>
+                            `}
                         </div>
                     </div>
 
@@ -62,10 +70,9 @@ export default {
     },
 
     /**
-     * Lifecycle method for any page-specific animations or initializations
+     * Lifecycle method
      */
     afterRender: async () => {
-        // You can add entrance animations here if using a library like GSAP
-        console.log("Home Portal Loaded");
+        console.log("Home Portal Loaded - User ID System Active");
     }
 };
