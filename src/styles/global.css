@@ -1,167 +1,149 @@
-/* --- Core Variables & Reset --- */
+/* --- Apple Modern Aesthetic Variables --- */
 :root {
-    --primary: #27ae60;      /* OKZ Green */
-    --primary-hover: #2ecc71;
-    --bg-dark: #0f172a;      /* Deep Slate */
-    --card-bg: #1e293b;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --border: #334155;
-    --danger: #ef4444;
+    /* System Colors */
+    --system-blue: #007AFF;
+    --system-green: #34C759;
+    --system-red: #FF3B30;
+    
+    /* Backgrounds & Text */
+    --bg-color: #F2F2F7;         /* Apple's "Grouped Table View" background */
+    --card-bg: rgba(255, 255, 255, 0.75); 
+    --text-main: #1C1C1E;
+    --text-muted: #8E8E93;
+    
+    /* Glassmorphism Specs */
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+    --blur: 18px;
   }
   
   * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Inter', -apple-system, sans-serif;
+    /* SF Pro Style Typography */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
   
   body {
-    background-color: var(--bg-dark);
+    background-color: var(--bg-color);
+    background: radial-gradient(at top left, #ffffff, var(--bg-color));
     color: var(--text-main);
-    line-height: 1.6;
+    line-height: 1.5;
+    letter-spacing: -0.015em;
   }
   
-  /* --- Base Layout --- */
-  .app-container {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+  /* --- The Glassmorphism Card --- */
+  .card, .auth-container, .booking-summary-card, .summary-card, .booking-card {
+    background: var(--card-bg) !important;
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 20px !important;
+    box-shadow: var(--glass-shadow);
+    padding: 24px;
+    transition: transform 0.3s ease;
   }
   
+  /* --- Apple Style Navbar --- */
   .navbar {
-    background: var(--card-bg);
-    border-bottom: 1px solid var(--border);
-    padding: 1rem 0;
+    background: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.1) !important;
     position: sticky;
     top: 0;
     z-index: 1000;
   }
   
-  .nav-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-  }
-  
   .nav-brand {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--primary);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #000;
     text-decoration: none;
-    letter-spacing: -1px;
+    letter-spacing: -0.5px;
   }
   
-  .nav-links {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-  }
-  
-  .nav-links a, .nav-btn-link {
-    text-decoration: none;
-    color: var(--text-main);
+  .nav-links a {
+    color: var(--system-blue);
     font-weight: 500;
-    font-size: 0.95rem;
-    transition: color 0.2s;
+    font-size: 1rem;
   }
   
-  .nav-links a:hover {
-    color: var(--primary);
+  /* --- Minimalist Forms --- */
+  .form-group label {
+    font-weight: 600;
+    color: var(--text-main);
+    margin-left: 4px;
+    margin-bottom: 8px;
   }
   
-  .content {
-    flex: 1;
-    max-width: 1200px;
+  input, select {
     width: 100%;
-    margin: 0 auto;
-    padding: 2rem 1.5rem;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: var(--text-main);
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+  }
+  
+  input:focus {
+    outline: none;
+    border-color: var(--system-blue);
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+  }
+  
+  /* --- Buttons --- */
+  .btn {
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .btn-primary {
+    background: var(--system-blue) !important;
+    color: white;
+  }
+  
+  .btn-primary:active {
+    transform: scale(0.97); /* Haptic-press feel */
   }
   
   /* --- Adaptable Grid System --- */
   .dashboard-grid, .portal-grid, .booking-form-grid {
     display: grid;
-    gap: 1.5rem;
-    grid-template-columns: 1fr; /* Default Mobile */
+    gap: 20px;
+    grid-template-columns: 1fr;
   }
   
   @media (min-width: 768px) {
-    .dashboard-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    .booking-form-grid {
-      grid-template-columns: 350px 1fr;
-    }
+    .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+    .booking-form-grid { grid-template-columns: 1fr 1fr; }
   }
   
-  @media (min-width: 1024px) {
-    .dashboard-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
+  /* --- Time Slots Grid --- */
+  .slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
   }
   
-  /* --- UI Components --- */
-  .card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    padding: 1.5rem;
-    border-radius: 12px;
+  .time-slot-btn {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    padding: 10px;
+    font-weight: 500;
+    color: var(--text-main);
   }
   
-  .btn {
-    padding: 0.8rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: transform 0.1s, opacity 0.2s;
-  }
-  
-  .btn-primary { background: var(--primary); color: white; }
-  .btn-primary:hover { background: var(--primary-hover); }
-  
-  .btn-secondary { background: var(--border); color: var(--text-main); }
-  
-  .btn-block { width: 100%; }
-  
-  /* --- Forms --- */
-  .form-group { margin-bottom: 1.25rem; }
-  .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
-  input, select {
-    width: 100%;
-    padding: 0.75rem;
-    background: #0f172a;
-    border: 1px solid var(--border);
+  .time-slot-btn.selected {
+    background: var(--system-blue) !important;
     color: white;
-    border-radius: 6px;
-  }
-  
-  /* --- Mobile Adaptability Overrides --- */
-  @media (max-width: 768px) {
-    .nav-links {
-      gap: 0.8rem;
-    }
-    
-    .nav-links span { display: none; } /* Hide text labels if needed */
-    
-    .nav-brand { font-size: 1.2rem; }
-  
-    .content { padding: 1rem; }
-    
-    .slots-grid {
-      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)) !important;
-    }
-  }
-  
-  /* --- Footer --- */
-  .footer {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    border-top: 1px solid var(--border);
+    border-color: var(--system-blue);
   }

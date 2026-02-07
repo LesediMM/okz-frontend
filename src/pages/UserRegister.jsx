@@ -4,7 +4,6 @@ import { useNavigate, Link } from 'react-router-dom';
 const UserRegister = () => {
     const navigate = useNavigate();
     
-    // Local state for form fields
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -24,97 +23,192 @@ const UserRegister = () => {
         try {
             const response = await fetch('https://okz.onrender.com/api/v1/register', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
 
             const res = await response.json();
 
             if (response.ok && res.status === 'success') {
-                alert('✅ Registration successful! Please login.');
-                navigate('/login'); // Automatic navigation via React Router
+                navigate('/login');
             } else {
-                const errorMessage = res.message || 'Registration failed.';
-                alert(`Error: ${errorMessage}`);
+                alert(`Error: ${res.message || 'Registration failed.'}`);
                 setLoading(false);
             }
         } catch (err) {
-            console.error('Registration error:', err);
             alert('Connection error. Please try again.');
             setLoading(false);
         }
     };
 
     return (
-        <div className="auth-page">
-            <div className="auth-header">
-                <h2>Join OKZ Sports</h2>
-                <p>Create an account to book Padel and Tennis courts</p>
+        <div className="auth-page apple-fade-in">
+            <div className="card glass-card auth-container">
+                <div className="auth-header">
+                    <div className="apple-logo-icon"></div>
+                    <h2>Create Account</h2>
+                    <p className="text-muted">Start your OKZ Sports journey today.</p>
+                </div>
+                
+                <form onSubmit={handleSubmit} className="apple-form">
+                    <div className="form-group">
+                        <label>Full Name</label>
+                        <input 
+                            type="text" 
+                            name="fullName" 
+                            placeholder="John Doe" 
+                            value={formData.fullName}
+                            onChange={handleChange}
+                            required 
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Email Address</label>
+                        <input 
+                            type="email" 
+                            name="email" 
+                            placeholder="apple@id.com" 
+                            value={formData.email}
+                            onChange={handleChange}
+                            required 
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Password</label>
+                        <input 
+                            type="password" 
+                            name="password" 
+                            placeholder="Required" 
+                            value={formData.password}
+                            onChange={handleChange}
+                            required 
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Phone Number</label>
+                        <input 
+                            type="tel" 
+                            name="phoneNumber" 
+                            placeholder="01XXXXXXXXX" 
+                            value={formData.phoneNumber}
+                            onChange={handleChange}
+                            required 
+                        />
+                    </div>
+
+                    <div className="auth-actions">
+                        <button 
+                            type="submit" 
+                            className={`btn btn-primary btn-large ${loading ? 'btn-loading' : ''}`} 
+                            disabled={loading}
+                        >
+                            {loading ? 'Creating Account...' : 'Continue'}
+                        </button>
+                    </div>
+                </form>
+
+                <div className="auth-footer">
+                    <p>Already a member? <Link to="/login" className="apple-link">Sign In</Link></p>
+                </div>
             </div>
-            
-            <form onSubmit={handleSubmit} className="auth-form">
-                <div className="form-group">
-                    <label htmlFor="fullName">Full Name</label>
-                    <input 
-                        type="text" 
-                        name="fullName" 
-                        placeholder="Enter your full name" 
-                        value={formData.fullName}
-                        onChange={handleChange}
-                        required 
-                    />
-                </div>
 
-                <div className="form-group">
-                    <label htmlFor="email">Email Address</label>
-                    <input 
-                        type="email" 
-                        name="email" 
-                        placeholder="name@example.com" 
-                        value={formData.email}
-                        onChange={handleChange}
-                        required 
-                    />
-                </div>
+            <style>{`
+                .auth-page {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    min-height: 80vh;
+                    padding: 1rem;
+                }
 
-                <div className="form-group">
-                    <label htmlFor="password">Password</label>
-                    <input 
-                        type="password" 
-                        name="password" 
-                        placeholder="Min. 6 chars (1 Upper, 1 Lower, 1 Number)" 
-                        value={formData.password}
-                        onChange={handleChange}
-                        required 
-                    />
-                </div>
+                .auth-container {
+                    width: 100%;
+                    max-width: 420px;
+                    padding: 3rem 2rem !important;
+                }
 
-                <div className="form-group">
-                    <label htmlFor="phoneNumber">Phone Number</label>
-                    <input 
-                        type="tel" 
-                        name="phoneNumber" 
-                        placeholder="e.g. 01012345678" 
-                        value={formData.phoneNumber}
-                        onChange={handleChange}
-                        required 
-                    />
-                </div>
+                .auth-header {
+                    text-align: center;
+                    margin-bottom: 2.5rem;
+                }
 
-                <button 
-                    type="submit" 
-                    className="btn btn-primary btn-block" 
-                    disabled={loading}
-                >
-                    {loading ? 'Creating Account...' : 'Register'}
-                </button>
-            </form>
+                .apple-logo-icon {
+                    font-size: 2.5rem;
+                    margin-bottom: 0.5rem;
+                    color: #000;
+                }
 
-            <div className="auth-footer">
-                <p>Already have an account? <Link to="/login" className="btn-link">Login here</Link></p>
-            </div>
+                .auth-header h2 {
+                    font-size: 1.8rem;
+                    font-weight: 700;
+                    letter-spacing: -0.5px;
+                }
+
+                .apple-form {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.25rem;
+                }
+
+                .form-group label {
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    color: var(--text-main);
+                    margin-bottom: 6px;
+                }
+
+                input {
+                    transition: all 0.2s ease;
+                    background: rgba(255, 255, 255, 0.5);
+                }
+
+                input:focus {
+                    background: #fff;
+                    transform: translateY(-1px);
+                }
+
+                .auth-actions {
+                    margin-top: 1rem;
+                }
+
+                .btn-large {
+                    width: 100%;
+                    padding: 14px !important;
+                    font-size: 1rem;
+                }
+
+                .auth-footer {
+                    margin-top: 2rem;
+                    text-align: center;
+                    font-size: 0.9rem;
+                    color: var(--text-muted);
+                }
+
+                .apple-link {
+                    color: var(--system-blue);
+                    text-decoration: none;
+                    font-weight: 600;
+                    margin-left: 4px;
+                }
+
+                .btn-loading {
+                    opacity: 0.7;
+                    cursor: not-allowed;
+                }
+
+                @media (max-width: 480px) {
+                    .auth-container {
+                        padding: 2rem 1.5rem !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        background: transparent !important;
+                        backdrop-filter: none !important;
+                    }
+                }
+            `}</style>
         </div>
     );
 };
