@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Booking.css';
 
@@ -13,7 +13,32 @@ const Booking = ({ user }) => {
         duration: 1
     });
 
+    const [pricing, setPricing] = useState({
+        paddle: 400,
+        tennis: 150
+    });
+    
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Fetch pricing on component mount
+    useEffect(() => {
+        fetchPricing();
+    }, []);
+
+    const fetchPricing = async () => {
+        try {
+            const response = await fetch('https://okz.onrender.com/api/status');
+            const data = await response.json();
+            if (data?.system?.pricing) {
+                setPricing({
+                    paddle: parseInt(data.system.pricing.paddle) || 400,
+                    tennis: parseInt(data.system.pricing.tennis) || 150
+                });
+            }
+        } catch (error) {
+            console.error('Failed to fetch pricing:', error);
+        }
+    };
 
     // Helper functions for date constraints
     const getToday = () => new Date().toISOString().split('T')[0];
@@ -25,34 +50,35 @@ const Booking = ({ user }) => {
 
     // Court Mapping - Synced with Backend
     const courts = bookingData.courtType === 'paddle' 
-        ? [{ v: 1, t: 'Paddle Court 1' }, { v: 2, t: 'Paddle Court 2' }]
+        ? [{ v: 1, t: 'Padel Court 1' }, { v: 2, t: 'Padel Court 2' }]
         : [{ v: 3, t: 'Tennis Court 1' }, { v: 4, t: 'Tennis Court 2' }, { v: 5, t: 'Tennis Court 3' }];
 
-    // Smart Time Slot Filtering
+    // Smart Time Slot Filtering - UPDATED to hourly slots only
     const generateAvailableSlots = () => {
         const slots = [];
         const now = new Date();
         const isToday = bookingData.date === now.toISOString().split('T')[0];
         const currentHour = now.getHours();
-        const currentMinute = now.getMinutes();
 
         for (let hour = 8; hour < 22; hour++) { // 🛡️ Sync with OPERATING_HOURS.end: 22
-            for (let minute of ['00', '30']) {
-                const timeStr = `${hour.toString().padStart(2, '0')}:${minute}`;
-                
-                // 🛡️ Filter out times that have already passed if the date is today
-                if (isToday) {
-                    if (hour < currentHour || (hour === currentHour && parseInt(minute) <= currentMinute)) {
-                        continue; // Skip past times
-                    }
-                }
-                slots.push(timeStr);
+            const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+            
+            // 🛡️ Filter out times that have already passed if the date is today
+            if (isToday && hour <= currentHour) {
+                continue; // Skip past times (including current hour if it's already started)
             }
+            slots.push(timeStr);
         }
         return slots;
     };
 
     const timeSlots = generateAvailableSlots();
+
+    // Calculate total price based on court type and duration
+    const calculateTotalPrice = () => {
+        const rate = bookingData.courtType === 'paddle' ? pricing.paddle : pricing.tennis;
+        return bookingData.duration * rate;
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -93,7 +119,8 @@ const Booking = ({ user }) => {
             const data = await res.json();
 
             if (res.ok) { 
-                // Success case
+                // Success case - show success message with price
+                alert(`✅ Booking confirmed! Total: ${calculateTotalPrice()} EGP`);
                 navigate('/my-bookings'); 
             } else { 
                 // 🛡️ Handle the specific array format from your express-validator
@@ -112,11 +139,26 @@ const Booking = ({ user }) => {
         }
     };
 
+    // Get current rate display
+    const currentRate = bookingData.courtType === 'paddle' ? pricing.paddle : pricing.tennis;
+
     return (
         <div className="booking-page-container apple-fade-in">
             <header className="page-header" style={{ textAlign: 'center', marginBottom: '3rem' }}>
                 <h1 className="hero-title">Reserve a Court</h1>
                 <p className="text-muted">Premium Padel and Tennis facilities in Cairo.</p>
+                <div className="pricing-badge" style={{
+                    display: 'inline-flex',
+                    gap: '20px',
+                    marginTop: '10px',
+                    padding: '8px 20px',
+                    background: 'rgba(0,0,0,0.03)',
+                    borderRadius: '30px',
+                    fontSize: '0.9rem'
+                }}>
+                    <span>🎾 Tennis: {pricing.tennis} EGP/hr</span>
+                    <span>🏸 Padel: {pricing.paddle} EGP/hr</span>
+                </div>
             </header>
 
             <div className="booking-layout-grid">
@@ -127,12 +169,12 @@ const Booking = ({ user }) => {
                             type="button"
                             className={bookingData.courtType === 'paddle' ? 'active' : ''} 
                             onClick={() => handleInputChange({ target: { name: 'courtType', value: 'paddle' }})}
-                        >Paddle</button>
+                        >Padel ({pricing.paddle} EGP)</button>
                         <button 
                             type="button"
                             className={bookingData.courtType === 'tennis' ? 'active' : ''} 
                             onClick={() => handleInputChange({ target: { name: 'courtType', value: 'tennis' }})}
-                        >Tennis</button>
+                        >Tennis ({pricing.tennis} EGP)</button>
                     </div>
 
                     <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
@@ -150,8 +192,10 @@ const Booking = ({ user }) => {
                         <div className="field-group">
                             <label className="input-label-tiny">DURATION</label>
                             <select name="duration" value={bookingData.duration} onChange={handleInputChange}>
-                                <option value="1">1 Hour</option>
-                                <option value="2">2 Hours</option>
+                                <option value="1">1 Hour ({currentRate} EGP)</option>
+                                <option value="2">2 Hours ({currentRate * 2} EGP)</option>
+                                <option value="3">3 Hours ({currentRate * 3} EGP)</option>
+                                <option value="4">4 Hours ({currentRate * 4} EGP)</option>
                             </select>
                         </div>
                     </div>
@@ -162,22 +206,49 @@ const Booking = ({ user }) => {
                             {courts.map(c => <option key={c.v} value={c.v}>{c.t}</option>)}
                         </select>
                     </div>
+
+                    {/* Rate indicator */}
+                    <div className="rate-indicator" style={{
+                        marginTop: '15px',
+                        padding: '10px',
+                        background: 'rgba(0,102,204,0.05)',
+                        borderRadius: '8px',
+                        fontSize: '0.9rem'
+                    }}>
+                        <span>💰 Current rate: <strong>{currentRate} EGP/hour</strong></span>
+                    </div>
                 </section>
 
-                {/* --- Step 2: Time Grid --- */}
+                {/* --- Step 2: Time Grid - UPDATED for hourly slots --- */}
                 <section className="time-picker-section">
-                    <h3 className="section-heading">Available Slots</h3>
+                    <h3 className="section-heading">
+                        Available Slots 
+                        <span style={{ fontSize: '0.8rem', marginLeft: '10px', fontWeight: 'normal', opacity: 0.7 }}>
+                            (Full hours only)
+                        </span>
+                    </h3>
                     <div className="time-pill-grid">
-                        {timeSlots.map(time => (
-                            <button 
-                                key={time}
-                                type="button"
-                                className={`time-pill ${bookingData.timeSlot === time ? 'selected' : ''}`}
-                                onClick={() => setBookingData(prev => ({ ...prev, timeSlot: time }))}
-                            >
-                                {time}
-                            </button>
-                        ))}
+                        {timeSlots.length > 0 ? (
+                            timeSlots.map(time => (
+                                <button 
+                                    key={time}
+                                    type="button"
+                                    className={`time-pill ${bookingData.timeSlot === time ? 'selected' : ''}`}
+                                    onClick={() => setBookingData(prev => ({ ...prev, timeSlot: time }))}
+                                >
+                                    {time}
+                                </button>
+                            ))
+                        ) : (
+                            <div className="empty-slots-message" style={{
+                                gridColumn: '1/-1',
+                                textAlign: 'center',
+                                padding: '40px',
+                                color: '#666'
+                            }}>
+                                No available slots for this date. Please select another date.
+                            </div>
+                        )}
                     </div>
                 </section>
 
@@ -185,8 +256,13 @@ const Booking = ({ user }) => {
                 <div className="glass-panel floating-checkout-bar">
                     <div className="checkout-flex">
                         <div className="price-display">
-                            <span className="price-label">ESTIMATED TOTAL</span>
-                            <span className="price-value">{bookingData.duration * 400} EGP</span>
+                            <span className="price-label">TOTAL</span>
+                            <span className="price-value">
+                                {calculateTotalPrice()} EGP
+                                <span style={{ fontSize: '0.8rem', marginLeft: '5px', opacity: 0.7 }}>
+                                    ({currentRate} EGP × {bookingData.duration}h)
+                                </span>
+                            </span>
                         </div>
                         <button 
                             type="button"

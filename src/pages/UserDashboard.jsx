@@ -6,6 +6,10 @@ const UserDashboard = ({ user }) => {
     const navigate = useNavigate();
     const [recentBookings, setRecentBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [pricing, setPricing] = useState({
+        paddle: 400,
+        tennis: 150
+    });
 
     useEffect(() => {
         // Defensive: Wait for auth state to settle before forcing redirect
@@ -36,6 +40,16 @@ const UserDashboard = ({ user }) => {
                 const bookings = res?.data?.bookings || [];
                 setRecentBookings(bookings.slice(0, 3));
             }
+
+            // Fetch pricing info from status endpoint
+            const statusResponse = await fetch('https://okz.onrender.com/api/status');
+            const statusData = await statusResponse.json();
+            if (statusData?.system?.pricing) {
+                setPricing({
+                    paddle: parseInt(statusData.system.pricing.paddle) || 400,
+                    tennis: parseInt(statusData.system.pricing.tennis) || 150
+                });
+            }
         } catch (error) {
             console.error('Dashboard Activity Error:', error);
         } finally {
@@ -54,6 +68,16 @@ const UserDashboard = ({ user }) => {
         month: 'long', 
         day: 'numeric' 
     });
+
+    // Format price display
+    const formatPrice = (price) => {
+        return new Intl.NumberFormat('en-EG', {
+            style: 'currency',
+            currency: 'EGP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(price);
+    };
 
     // If user is null, show a graceful loading state instead of crashing
     if (!user) {
@@ -85,6 +109,17 @@ const UserDashboard = ({ user }) => {
                     <div className="card-content">
                         <h3>Start a Game</h3>
                         <p className="text-muted">Book a professional court instantly.</p>
+                        <div className="price-tag" style={{ 
+                            background: 'rgba(0,0,0,0.03)', 
+                            padding: '8px 12px', 
+                            borderRadius: '20px',
+                            display: 'inline-block',
+                            marginTop: '8px',
+                            fontSize: '0.85rem'
+                        }}>
+                            <span style={{ marginRight: '15px' }}>🎾 Tennis: {formatPrice(pricing.tennis)}/hr</span>
+                            <span>🏸 Padel: {formatPrice(pricing.paddle)}/hr</span>
+                        </div>
                     </div>
                     <button onClick={() => navigate('/booking')} className="book-now-btn">
                         Book Now
@@ -107,10 +142,12 @@ const UserDashboard = ({ user }) => {
                                     <div className="activity-info">
                                         <span className="activity-title">
                                             {/* Safe access to court properties */}
-                                            {(b?.courtType || 'Court').charAt(0).toUpperCase() + (b?.courtType || '').slice(1)} (C{b?.courtNumber || '?'})
+                                            {(b?.courtType || 'Court').charAt(0).toUpperCase() + (b?.courtType || '').slice(1)} Court {b?.courtNumber || '?'}
+                                            {b?.duration > 1 && <span style={{ fontSize: '0.7rem', marginLeft: '5px', opacity: 0.7 }}>{b.duration}h</span>}
                                         </span>
                                         <span className="activity-time">
-                                            {b?.date ? new Date(b.date).toLocaleDateString() : 'Pending'} • {b?.timeSlot || '--:--'}
+                                            {b?.date ? new Date(b.date).toLocaleDateString('en-GB') : 'Pending'} • {b?.timeSlot || '--:--'}
+                                            {b?.totalPrice && <span style={{ marginLeft: '8px', fontWeight: '600' }}>{formatPrice(b.totalPrice)}</span>}
                                         </span>
                                     </div>
                                     <span className={`status-pill status-${(b?.status || 'pending').toLowerCase()}`}>
@@ -122,6 +159,19 @@ const UserDashboard = ({ user }) => {
                     ) : (
                         <div className="empty-state" style={{ textAlign: 'center', padding: '2rem 0' }}>
                             <p className="text-muted">No games scheduled yet.</p>
+                            <button 
+                                onClick={() => navigate('/booking')} 
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#0066CC',
+                                    marginTop: '10px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                Book your first game →
+                            </button>
                         </div>
                     )}
                 </div>
@@ -129,22 +179,30 @@ const UserDashboard = ({ user }) => {
                 {/* --- Club Stats: Info Widget --- */}
                 <div className="glass-panel dashboard-card">
                     <div className="widget-icon-bg" style={{ background: 'rgba(52, 199, 89, 0.1)' }}>🏆</div>
-                    <h3 style={{ marginBottom: '1rem' }}>Club Rules</h3>
+                    <h3 style={{ marginBottom: '1rem' }}>Club Rules & Rates</h3>
                     <div className="apple-stat-list">
                         <div className="stat-row">
-                            <span>Court Rate</span>
-                            <strong>400 EGP/hr</strong>
+                            <span>🎾 Tennis Rate</span>
+                            <strong>{formatPrice(pricing.tennis)}/hr</strong>
                         </div>
                         <div className="stat-row">
-                            <span>Opening</span>
+                            <span>🏸 Padel Rate</span>
+                            <strong>{formatPrice(pricing.paddle)}/hr</strong>
+                        </div>
+                        <div className="stat-row" style={{ borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: '5px', paddingTop: '10px' }}>
+                            <span>⏰ Booking Slots</span>
+                            <strong>Full Hours Only</strong>
+                        </div>
+                        <div className="stat-row">
+                            <span>🕒 Opening</span>
                             <strong>08:00 AM</strong>
                         </div>
                         <div className="stat-row">
-                            <span>Closing</span>
+                            <span>🕒 Closing</span>
                             <strong>10:00 PM</strong>
                         </div>
                         <div className="stat-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                            <span className="text-muted" style={{ fontSize: '0.75rem' }}>Cairo, Egypt</span>
+                            <span className="text-muted" style={{ fontSize: '0.75rem' }}>📍 Cairo, Egypt</span>
                         </div>
                     </div>
                 </div>
