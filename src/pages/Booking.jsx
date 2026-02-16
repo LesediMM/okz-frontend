@@ -7,14 +7,15 @@ const Booking = ({ user }) => {
     
     const [bookingData, setBookingData] = useState({
         date: new Date().toISOString().split('T')[0],
-        courtType: 'padel', // 👈 Changed from 'paddle' to 'padel'
+        courtType: 'padel',
         courtNumber: 1,
         timeSlot: '',
-        duration: 1
+        duration: 1,
+        phoneNumber: '' // 👈 Add this line
     });
 
     const [pricing, setPricing] = useState({
-        padel: 400, // 👈 Changed from 'paddle' to 'padel'
+        padel: 400,
         tennis: 150
     });
     
@@ -31,7 +32,7 @@ const Booking = ({ user }) => {
             const data = await response.json();
             if (data?.system?.pricing) {
                 setPricing({
-                    padel: parseInt(data.system.pricing.padel) || 400, // 👈 Changed from 'paddle' to 'padel'
+                    padel: parseInt(data.system.pricing.padel) || 400,
                     tennis: parseInt(data.system.pricing.tennis) || 150
                 });
             }
@@ -49,23 +50,42 @@ const Booking = ({ user }) => {
     };
 
     // Court Mapping - Synced with Backend
-    const courts = bookingData.courtType === 'padel' // 👈 Changed from 'paddle' to 'padel'
+    const courts = bookingData.courtType === 'padel'
         ? [{ v: 1, t: 'Padel Court 1' }, { v: 2, t: 'Padel Court 2' }]
         : [{ v: 3, t: 'Tennis Court 1' }, { v: 4, t: 'Tennis Court 2' }, { v: 5, t: 'Tennis Court 3' }];
 
-    // Smart Time Slot Filtering - UPDATED to hourly slots only
+    // Smart Time Slot Filtering - NOW CAIRO TIMEZONE AWARE
     const generateAvailableSlots = () => {
         const slots = [];
+        
+        // 1. Get current Cairo Hour and Date
         const now = new Date();
-        const isToday = bookingData.date === now.toISOString().split('T')[0];
-        const currentHour = now.getHours();
+        const cairoFormatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Africa/Cairo',
+            hour: 'numeric',
+            hour12: false,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
 
-        for (let hour = 8; hour < 22; hour++) { // 🛡️ Sync with OPERATING_HOURS.end: 22
+        // Get parts to reconstruct Cairo today's date string
+        const parts = cairoFormatter.formatToParts(now);
+        const cairoHour = parseInt(parts.find(p => p.type === 'hour').value);
+        const cairoYear = parts.find(p => p.type === 'year').value;
+        const cairoMonth = parts.find(p => p.type === 'month').value;
+        const cairoDay = parts.find(p => p.type === 'day').value;
+        
+        const cairoTodayStr = `${cairoYear}-${cairoMonth}-${cairoDay}`;
+        const isToday = bookingData.date === cairoTodayStr;
+
+        // 2. Generate slots based on Cairo operating hours
+        for (let hour = 8; hour < 22; hour++) { 
             const timeStr = `${hour.toString().padStart(2, '0')}:00`;
             
-            // 🛡️ Filter out times that have already passed if the date is today
-            if (isToday && hour <= currentHour) {
-                continue; // Skip past times (including current hour if it's already started)
+            // 🛡️ Filter out times that have already passed in Cairo
+            if (isToday && hour <= cairoHour) {
+                continue; 
             }
             slots.push(timeStr);
         }
@@ -76,7 +96,7 @@ const Booking = ({ user }) => {
 
     // Calculate total price based on court type and duration
     const calculateTotalPrice = () => {
-        const rate = bookingData.courtType === 'padel' ? pricing.padel : pricing.tennis; // 👈 Changed both
+        const rate = bookingData.courtType === 'padel' ? pricing.padel : pricing.tennis;
         return bookingData.duration * rate;
     };
 
@@ -85,7 +105,8 @@ const Booking = ({ user }) => {
         setBookingData(prev => ({ 
             ...prev, 
             [name]: name === 'courtNumber' || name === 'duration' ? Number(value) : value,
-            ...(name === 'courtType' && { courtNumber: value === 'padel' ? 1 : 3 }) // 👈 Changed from 'paddle' to 'padel'
+            ...(name === 'courtType' && { courtNumber: value === 'padel' ? 1 : 3 }),
+            ...(name === 'date' && { timeSlot: '' }) // ✨ CLEAR timeSlot if date changes
         }));
     };
 
@@ -97,7 +118,13 @@ const Booking = ({ user }) => {
             return; 
         }
 
-        // 🛡️ Guard 2: The "Data Corruption" Killer (Input Validation)
+        // 🛡️ Guard 2: Phone Number Validation
+        if (!bookingData.phoneNumber || bookingData.phoneNumber.trim().length < 8) {
+            alert("⚠️ Please enter a valid contact phone number.");
+            return; 
+        }
+
+        // 🛡️ Guard 3: The "Data Corruption" Killer (Input Validation)
         if (!bookingData.timeSlot) {
             alert("⚠️ Selection Required: Please pick a time slot first!");
             return; 
@@ -110,7 +137,7 @@ const Booking = ({ user }) => {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json', 
-                    // 🛡️ Guard 3: Safe Property Access
+                    // 🛡️ Guard 4: Safe Property Access
                     'x-user-email': user?.email 
                 },
                 body: JSON.stringify(bookingData)
@@ -134,13 +161,13 @@ const Booking = ({ user }) => {
             console.error("Connection Error:", e);
             alert("Connection error. The server might be waking up."); 
         } finally { 
-            // 🛡️ Guard 4: The "Loading" Killer (Always reset state)
+            // 🛡️ Guard 5: The "Loading" Killer (Always reset state)
             setIsProcessing(false); 
         }
     };
 
     // Get current rate display
-    const currentRate = bookingData.courtType === 'padel' ? pricing.padel : pricing.tennis; // 👈 Changed from 'paddle' to 'padel'
+    const currentRate = bookingData.courtType === 'padel' ? pricing.padel : pricing.tennis;
 
     return (
         <div className="booking-page-container apple-fade-in">
@@ -157,7 +184,7 @@ const Booking = ({ user }) => {
                     fontSize: '0.9rem'
                 }}>
                     <span>🎾 Tennis: {pricing.tennis} EGP/hr</span>
-                    <span>🏸 Padel: {pricing.padel} EGP/hr</span> {/* 👈 Changed from pricing.paddle to pricing.padel */}
+                    <span>🏸 Padel: {pricing.padel} EGP/hr</span>
                 </div>
             </header>
 
@@ -167,9 +194,9 @@ const Booking = ({ user }) => {
                     <div className="segmented-control">
                         <button 
                             type="button"
-                            className={bookingData.courtType === 'padel' ? 'active' : ''} // 👈 Changed from 'paddle' to 'padel'
-                            onClick={() => handleInputChange({ target: { name: 'courtType', value: 'padel' }})} // 👈 Changed from 'paddle' to 'padel'
-                        >Padel ({pricing.padel} EGP)</button> {/* 👈 Changed from pricing.paddle to pricing.padel */}
+                            className={bookingData.courtType === 'padel' ? 'active' : ''}
+                            onClick={() => handleInputChange({ target: { name: 'courtType', value: 'padel' }})}
+                        >Padel ({pricing.padel} EGP)</button>
                         <button 
                             type="button"
                             className={bookingData.courtType === 'tennis' ? 'active' : ''} 
@@ -200,6 +227,26 @@ const Booking = ({ user }) => {
                         </div>
                     </div>
 
+                    {/* Phone Number Input Field */}
+                    <div className="field-group" style={{ marginBottom: '15px' }}>
+                        <label className="input-label-tiny">CONTACT PHONE NUMBER</label>
+                        <input 
+                            type="tel" 
+                            name="phoneNumber" 
+                            placeholder="Enter your mobile number"
+                            value={bookingData.phoneNumber} 
+                            onChange={handleInputChange} 
+                            required
+                            style={{
+                                width: '100%',
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: '1px solid rgba(0,0,0,0.1)',
+                                fontSize: '1rem'
+                            }}
+                        />
+                    </div>
+
                     <div className="field-group" style={{ marginTop: '10px' }}>
                         <label className="input-label-tiny">PREVIEW COURT</label>
                         <select name="courtNumber" value={bookingData.courtNumber} onChange={handleInputChange}>
@@ -219,12 +266,12 @@ const Booking = ({ user }) => {
                     </div>
                 </section>
 
-                {/* --- Step 2: Time Grid - UPDATED for hourly slots --- */}
+                {/* --- Step 2: Time Grid - UPDATED for hourly slots with Cairo timezone --- */}
                 <section className="time-picker-section">
                     <h3 className="section-heading">
                         Available Slots 
                         <span style={{ fontSize: '0.8rem', marginLeft: '10px', fontWeight: 'normal', opacity: 0.7 }}>
-                            (Full hours only)
+                            (Cairo Time - Full hours only)
                         </span>
                     </h3>
                     <div className="time-pill-grid">
@@ -266,9 +313,9 @@ const Booking = ({ user }) => {
                         </div>
                         <button 
                             type="button"
-                            className={`confirm-booking-btn ${(!bookingData.timeSlot || isProcessing) ? 'disabled' : ''}`}
+                            className={`confirm-booking-btn ${(!bookingData.timeSlot || !bookingData.phoneNumber || isProcessing) ? 'disabled' : ''}`}
                             onClick={handleBooking}
-                            disabled={isProcessing || !bookingData.timeSlot}
+                            disabled={isProcessing || !bookingData.timeSlot || !bookingData.phoneNumber}
                         >
                             {isProcessing ? 'Processing...' : 'Reserve Now'}
                         </button>
