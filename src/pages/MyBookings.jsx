@@ -2,6 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/MyBookings.css'; 
 
+// Location constants
+const BING_MAPS_LINK = "https://www.bing.com/maps/search?v=2&pc=FACEBK&mid=8100&mkt=en-GB&q=73A+street+9+Maadi&cp=29.973510%7E31.248521&lvl=16&style=r";
+const CLUB_ADDRESS = "73A Street 9, Maadi, Cairo";
+
 const MyBookings = ({ user }) => {
     const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
@@ -242,6 +246,8 @@ const MyBookings = ({ user }) => {
                                                 {ratePerHour} EGP/hr
                                             </span>
                                         </h3>
+                                        
+                                        {/* Ticket Details - Date, Time, Duration */}
                                         <div className="ticket-details" style={{ display: 'flex', gap: '24px', marginTop: 'auto' }}>
                                             <div className="detail-item">
                                                 <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>DATE</span>
@@ -254,6 +260,65 @@ const MyBookings = ({ user }) => {
                                             <div className="detail-item">
                                                 <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>DURATION</span>
                                                 <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{getDurationDisplay(b?.duration)}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* ✨ NEW LOCATION BLOCK ✨ */}
+                                        <div className="location-footer" style={{ 
+                                            marginTop: '20px', 
+                                            paddingTop: '15px', 
+                                            borderTop: '1px dashed rgba(0,0,0,0.1)',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '8px'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                                <span style={{ fontSize: '1rem' }}>📍</span>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--brand-navy)', opacity: 0.6 }}>LOCATION</span>
+                                                    <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--brand-navy)' }}>{CLUB_ADDRESS}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <a 
+                                                href={BING_MAPS_LINK}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="map-link-action"
+                                                style={{
+                                                    textDecoration: 'none',
+                                                    fontSize: '0.75rem',
+                                                    color: '#0078d4', // Bing Blue
+                                                    fontWeight: '700',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    width: 'fit-content'
+                                                }}
+                                            >
+                                                Open in Maps →
+                                            </a>
+
+                                            {/* Optional: Embedded Map Preview */}
+                                            <div style={{ 
+                                                marginTop: '10px', 
+                                                borderRadius: '8px', 
+                                                overflow: 'hidden', 
+                                                height: '100px', 
+                                                width: '100%',
+                                                border: '1px solid rgba(0,0,0,0.05)' 
+                                            }}>
+                                                <iframe 
+                                                    title="Court Location Map"
+                                                    width="100%" 
+                                                    height="100" 
+                                                    frameBorder="0" 
+                                                    src="https://www.bing.com/maps/embed?h=100&w=400&cp=29.973510~31.248521&lvl=15&typ=d&sty=r&src=SHELL&FORM=MBEDV8" 
+                                                    scrolling="no"
+                                                    style={{ borderRadius: '8px' }}
+                                                    loading="lazy"
+                                                >
+                                                </iframe>
                                             </div>
                                         </div>
                                     </div>

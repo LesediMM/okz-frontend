@@ -60,7 +60,8 @@
 .ticket-card { 
   display: flex; 
   padding: 0 !important; 
-  min-height: 180px; 
+  /* min-height: 180px; REMOVED - height now auto to accommodate map */
+  height: auto;
   overflow: hidden; 
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.8) !important;
@@ -167,6 +168,33 @@
   font-weight: 700;
   font-size: 1.1rem;
   color: var(--brand-navy);
+}
+
+/* --- New Location Section --- */
+.location-footer {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px dashed rgba(26, 43, 86, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.map-link-action {
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.map-link-action:hover {
+  color: #005a9e !important; /* Darker Bing Blue */
+  transform: translateX(3px);
+  text-decoration: underline !important;
+}
+
+/* Ensure the iframe container looks like a clean UI element */
+.location-footer div[style*="borderRadius"] {
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 /* --- Ticket Divider --- */
@@ -367,20 +395,25 @@
       font-size: 1rem;
   }
 
-  .ticket-divider { 
-      width: 100%; 
-      height: 2px; 
-      border-left: none; 
-      border-top: 2px dashed rgba(0,0,0,0.1); 
-      margin: 0; 
+  /* Mobile Location Styles */
+  .location-footer {
+      margin-top: 15px;
+      padding-top: 12px;
   }
 
-  .ticket-stub { 
+  /* Make the map a bit shorter on tiny screens */
+  .location-footer iframe {
+      height: 120px !important;
+  }
+  
+  .ticket-stub {
       width: 100%; 
       padding: 20px; 
       flex-direction: row;
       flex-wrap: wrap;
       gap: 15px;
+      background: rgba(0, 0, 0, 0.02); /* Slight tint for separation */
+      border-top: 1px solid rgba(0,0,0,0.05);
   }
 
   .ticket-stub > div {
@@ -394,6 +427,14 @@
 
   .price-tag {
       font-size: 1.4rem;
+  }
+
+  .ticket-divider { 
+      width: 100%; 
+      height: 2px; 
+      border-left: none; 
+      border-top: 2px dashed rgba(0,0,0,0.1); 
+      margin: 0; 
   }
 }
 
@@ -414,5 +455,10 @@
 
   .ticket-details {
       gap: 20px;
+  }
+
+  /* Tablet Location Styles */
+  .location-footer iframe {
+      height: 110px !important;
   }
 }
