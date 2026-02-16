@@ -7,14 +7,14 @@ const Booking = ({ user }) => {
     
     const [bookingData, setBookingData] = useState({
         date: new Date().toISOString().split('T')[0],
-        courtType: 'paddle', 
+        courtType: 'padel', // 👈 Changed from 'paddle' to 'padel'
         courtNumber: 1,
         timeSlot: '',
         duration: 1
     });
 
     const [pricing, setPricing] = useState({
-        paddle: 400,
+        padel: 400, // 👈 Changed from 'paddle' to 'padel'
         tennis: 150
     });
     
@@ -31,7 +31,7 @@ const Booking = ({ user }) => {
             const data = await response.json();
             if (data?.system?.pricing) {
                 setPricing({
-                    paddle: parseInt(data.system.pricing.paddle) || 400,
+                    padel: parseInt(data.system.pricing.padel) || 400, // 👈 Changed from 'paddle' to 'padel'
                     tennis: parseInt(data.system.pricing.tennis) || 150
                 });
             }
@@ -49,7 +49,7 @@ const Booking = ({ user }) => {
     };
 
     // Court Mapping - Synced with Backend
-    const courts = bookingData.courtType === 'paddle' 
+    const courts = bookingData.courtType === 'padel' // 👈 Changed from 'paddle' to 'padel'
         ? [{ v: 1, t: 'Padel Court 1' }, { v: 2, t: 'Padel Court 2' }]
         : [{ v: 3, t: 'Tennis Court 1' }, { v: 4, t: 'Tennis Court 2' }, { v: 5, t: 'Tennis Court 3' }];
 
@@ -76,7 +76,7 @@ const Booking = ({ user }) => {
 
     // Calculate total price based on court type and duration
     const calculateTotalPrice = () => {
-        const rate = bookingData.courtType === 'paddle' ? pricing.paddle : pricing.tennis;
+        const rate = bookingData.courtType === 'padel' ? pricing.padel : pricing.tennis; // 👈 Changed both
         return bookingData.duration * rate;
     };
 
@@ -85,7 +85,7 @@ const Booking = ({ user }) => {
         setBookingData(prev => ({ 
             ...prev, 
             [name]: name === 'courtNumber' || name === 'duration' ? Number(value) : value,
-            ...(name === 'courtType' && { courtNumber: value === 'paddle' ? 1 : 3 })
+            ...(name === 'courtType' && { courtNumber: value === 'padel' ? 1 : 3 }) // 👈 Changed from 'paddle' to 'padel'
         }));
     };
 
@@ -140,7 +140,7 @@ const Booking = ({ user }) => {
     };
 
     // Get current rate display
-    const currentRate = bookingData.courtType === 'paddle' ? pricing.paddle : pricing.tennis;
+    const currentRate = bookingData.courtType === 'padel' ? pricing.padel : pricing.tennis; // 👈 Changed from 'paddle' to 'padel'
 
     return (
         <div className="booking-page-container apple-fade-in">
@@ -157,7 +157,7 @@ const Booking = ({ user }) => {
                     fontSize: '0.9rem'
                 }}>
                     <span>🎾 Tennis: {pricing.tennis} EGP/hr</span>
-                    <span>🏸 Padel: {pricing.paddle} EGP/hr</span>
+                    <span>🏸 Padel: {pricing.padel} EGP/hr</span> {/* 👈 Changed from pricing.paddle to pricing.padel */}
                 </div>
             </header>
 
@@ -167,9 +167,9 @@ const Booking = ({ user }) => {
                     <div className="segmented-control">
                         <button 
                             type="button"
-                            className={bookingData.courtType === 'paddle' ? 'active' : ''} 
-                            onClick={() => handleInputChange({ target: { name: 'courtType', value: 'paddle' }})}
-                        >Padel ({pricing.paddle} EGP)</button>
+                            className={bookingData.courtType === 'padel' ? 'active' : ''} // 👈 Changed from 'paddle' to 'padel'
+                            onClick={() => handleInputChange({ target: { name: 'courtType', value: 'padel' }})} // 👈 Changed from 'paddle' to 'padel'
+                        >Padel ({pricing.padel} EGP)</button> {/* 👈 Changed from pricing.paddle to pricing.padel */}
                         <button 
                             type="button"
                             className={bookingData.courtType === 'tennis' ? 'active' : ''} 
