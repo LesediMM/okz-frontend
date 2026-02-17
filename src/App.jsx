@@ -10,22 +10,40 @@ import Login from './pages/UserLogin.jsx';
 import Register from './pages/UserRegister.jsx';
 import MyBookings from './pages/MyBookings.jsx';
 
+// Import Session Manager for persistent storage
+import { sessionManager } from './session/session';
+
 /**
  * OKZ Sports - Main Application Component
- * Implements React Router and Zero-Storage State Management
+ * Implements React Router and Persistent Session Management
  */
 function App() {
-    // Zero-Storage: State is held in volatile memory (RAM).
-    const [user, setUser] = useState(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    // Hydrated Storage: State is initialized from browser cookie
+    const [user, setUser] = useState(() => {
+        const session = sessionManager.getSession();
+        return session ? session.user : null;
+    });
+
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        return sessionManager.isValidSession();
+    });
 
     const handleLoginSuccess = (userData) => {
+        // Save to browser cookie for persistence
+        sessionManager.saveSession(userData);
+        
+        // Update React state
         setUser(userData);
         setIsAuthenticated(true);
     };
 
     const handleLogout = () => {
-        console.log('OKZ Sports: Clearing session from memory...');
+        console.log('OKZ Sports: Clearing persistent session...');
+        
+        // Remove browser cookie
+        sessionManager.endSession();
+        
+        // Clear React state
         setUser(null);
         setIsAuthenticated(false);
     };
