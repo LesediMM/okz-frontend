@@ -21,6 +21,12 @@ const Booking = ({ user }) => {
     
     const [isProcessing, setIsProcessing] = useState(false);
 
+    // ✅ ADD THIS HELPER FUNCTION - Professional Phone Validation
+    const validatePhoneNumber = (phone) => {
+        const phoneRegex = /^[0-9+\s-]{8,15}$/;
+        return phoneRegex.test(phone.trim());
+    };
+
     // Fetch pricing on component mount
     useEffect(() => {
         fetchPricing();
@@ -118,9 +124,9 @@ const Booking = ({ user }) => {
             return; 
         }
 
-        // 🛡️ Guard 2: Phone Number Validation
-        if (!bookingData.phoneNumber || bookingData.phoneNumber.trim().length < 8) {
-            alert("⚠️ Please enter a valid contact phone number.");
+        // 🛡️ Guard 2: Professional Phone Number Validation (UPDATED)
+        if (!bookingData.phoneNumber || !validatePhoneNumber(bookingData.phoneNumber)) {
+            alert("⚠️ Please enter a valid phone number (8-15 digits, can include +, spaces, or hyphens)");
             return; 
         }
 
@@ -227,15 +233,16 @@ const Booking = ({ user }) => {
                         </div>
                     </div>
 
-                    {/* Phone Number Input Field */}
+                    {/* Phone Number Input Field - UPDATED with pattern attribute and better placeholder */}
                     <div className="field-group" style={{ marginBottom: '15px' }}>
                         <label className="input-label-tiny">CONTACT PHONE NUMBER</label>
                         <input 
                             type="tel" 
                             name="phoneNumber" 
-                            placeholder="Enter your mobile number"
+                            placeholder="e.g., +20 123 456 7890"
                             value={bookingData.phoneNumber} 
                             onChange={handleInputChange} 
+                            pattern="[0-9+\s-]{8,15}" // Browser-level constraint
                             required
                             style={{
                                 width: '100%',
@@ -245,6 +252,15 @@ const Booking = ({ user }) => {
                                 fontSize: '1rem'
                             }}
                         />
+                        <small style={{ 
+                            display: 'block', 
+                            fontSize: '0.7rem', 
+                            color: '#666', 
+                            marginTop: '4px',
+                            opacity: 0.7
+                        }}>
+                            Format: 8-15 digits, can include +, spaces, or hyphens
+                        </small>
                     </div>
 
                     <div className="field-group" style={{ marginTop: '10px' }}>

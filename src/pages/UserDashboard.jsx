@@ -6,8 +6,10 @@ const UserDashboard = ({ user }) => {
     const navigate = useNavigate();
     const [recentBookings, setRecentBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // FIX 1: Changed 'paddle' to 'padel' in initial state
     const [pricing, setPricing] = useState({
-        paddle: 400,
+        padel: 400,
         tennis: 150
     });
 
@@ -41,12 +43,13 @@ const UserDashboard = ({ user }) => {
                 setRecentBookings(bookings.slice(0, 3));
             }
 
-            // Fetch pricing info from status endpoint
+            // FIX 2: Updated API fetch logic to handle both 'padel' and 'paddle' for backward compatibility
             const statusResponse = await fetch('https://okz.onrender.com/api/status');
             const statusData = await statusResponse.json();
             if (statusData?.system?.pricing) {
                 setPricing({
-                    paddle: parseInt(statusData.system.pricing.paddle) || 400,
+                    // Map the backend 'padel' field (with fallback to 'paddle' for backward compatibility)
+                    padel: parseInt(statusData.system.pricing.padel || statusData.system.pricing.paddle) || 400,
                     tennis: parseInt(statusData.system.pricing.tennis) || 150
                 });
             }
@@ -118,7 +121,8 @@ const UserDashboard = ({ user }) => {
                             fontSize: '0.85rem'
                         }}>
                             <span style={{ marginRight: '15px' }}>🎾 Tennis: {formatPrice(pricing.tennis)}/hr</span>
-                            <span>🏸 Padel: {formatPrice(pricing.paddle)}/hr</span>
+                            {/* FIX 3A: Changed 'pricing.paddle' to 'pricing.padel' */}
+                            <span>🏸 Padel: {formatPrice(pricing.padel)}/hr</span>
                         </div>
                     </div>
                     <button onClick={() => navigate('/booking')} className="book-now-btn">
@@ -185,9 +189,10 @@ const UserDashboard = ({ user }) => {
                             <span>🎾 Tennis Rate</span>
                             <strong>{formatPrice(pricing.tennis)}/hr</strong>
                         </div>
+                        {/* FIX 3B: Changed 'pricing.paddle' to 'pricing.padel' */}
                         <div className="stat-row">
                             <span>🏸 Padel Rate</span>
-                            <strong>{formatPrice(pricing.paddle)}/hr</strong>
+                            <strong>{formatPrice(pricing.padel)}/hr</strong>
                         </div>
                         <div className="stat-row" style={{ borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: '5px', paddingTop: '10px' }}>
                             <span>⏰ Booking Slots</span>

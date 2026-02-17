@@ -14,6 +14,12 @@ const UserRegister = () => {
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState(""); // 🛡️ Error Notification State
 
+    // ✅ Helper Function (Matches Booking.jsx)
+    const validatePhoneNumber = (phone) => {
+        const phoneRegex = /^[0-9+\s-]{8,15}$/;
+        return phoneRegex.test(phone.trim());
+    };
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -21,6 +27,14 @@ const UserRegister = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMessage(""); // Clear old errors
+
+        // 🛡️ FRONTEND VALIDATION GUARD
+        if (!validatePhoneNumber(formData.phoneNumber)) {
+            setErrorMessage("Please enter a valid phone number (8-15 digits, can include +, spaces, or hyphens)");
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -108,11 +122,21 @@ const UserRegister = () => {
                         <input 
                             type="tel" 
                             name="phoneNumber" 
-                            placeholder="01XXXXXXXXX" 
+                            placeholder="e.g., +20 123 456 7890" 
                             value={formData.phoneNumber}
                             onChange={handleChange}
+                            pattern="[0-9+\s-]{8,15}" // Browser-level check
                             required 
                         />
+                        <small className="field-hint" style={{ 
+                            display: 'block', 
+                            fontSize: '0.7rem', 
+                            color: '#666', 
+                            marginTop: '4px',
+                            opacity: 0.7
+                        }}>
+                            8-15 digits, spaces and + allowed.
+                        </small>
                     </div>
 
                     <div className="auth-actions">

@@ -11,8 +11,10 @@ const MyBookings = ({ user }) => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    
+    // FIX 1: Changed 'paddle' to 'padel' in initial state
     const [pricing, setPricing] = useState({
-        paddle: 400,
+        padel: 400,
         tennis: 150
     });
 
@@ -21,13 +23,14 @@ const MyBookings = ({ user }) => {
         fetchPricing();
     }, []);
 
+    // FIX 2: Updated fetchPricing to use 'padel' instead of 'paddle'
     const fetchPricing = async () => {
         try {
             const response = await fetch('https://okz.onrender.com/api/status');
             const data = await response.json();
             if (data?.system?.pricing) {
                 setPricing({
-                    paddle: parseInt(data.system.pricing.paddle) || 400,
+                    padel: parseInt(data.system.pricing.padel) || 400,
                     tennis: parseInt(data.system.pricing.tennis) || 150
                 });
             }
@@ -110,10 +113,10 @@ const MyBookings = ({ user }) => {
     };
 
     /**
-     * Get court type icon
+     * FIX 3: Get court type icon - changed 'paddle' to 'padel'
      */
     const getCourtIcon = (courtType) => {
-        return courtType?.toLowerCase() === 'paddle' ? '🏸' : '🎾';
+        return courtType?.toLowerCase() === 'padel' ? '🏸' : '🎾';
     };
 
     /**
@@ -169,10 +172,10 @@ const MyBookings = ({ user }) => {
     };
 
     /**
-     * Get rate per hour based on court type
+     * FIX 4: Get rate per hour based on court type - changed 'paddle' to 'padel'
      */
     const getRatePerHour = (courtType) => {
-        return courtType?.toLowerCase() === 'paddle' ? pricing.paddle : pricing.tennis;
+        return courtType?.toLowerCase() === 'padel' ? pricing.padel : pricing.tennis;
     };
 
     // Early Return Pattern
@@ -193,7 +196,7 @@ const MyBookings = ({ user }) => {
                 <h1 className="hero-title" style={{ fontSize: '2.5rem' }}>My Reservations</h1>
                 <p className="text-muted">Manage your schedule and match history.</p>
                 
-                {/* Pricing Summary */}
+                {/* FIX 5: Pricing Summary - changed 'paddle' to 'padel' */}
                 <div className="pricing-summary" style={{
                     display: 'flex',
                     gap: '20px',
@@ -205,7 +208,7 @@ const MyBookings = ({ user }) => {
                     justifyContent: 'center'
                 }}>
                     <span>🎾 Tennis: {formatPrice(pricing.tennis)}/hr</span>
-                    <span>🏸 Padel: {formatPrice(pricing.paddle)}/hr</span>
+                    <span>🏸 Padel: {formatPrice(pricing.padel)}/hr</span>
                 </div>
             </header>
 
@@ -368,12 +371,13 @@ const MyBookings = ({ user }) => {
                             );
                         })
                     ) : (
+                        // FIX 6: Empty state - changed 'paddle' to 'padel'
                         <div className="glass-panel empty-state" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
                             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎾</div>
                             <h3>No sessions yet</h3>
                             <p className="text-muted">Your reserved courts will appear here as tickets.</p>
                             <p style={{ fontSize: '0.85rem', marginTop: '5px', opacity: 0.7 }}>
-                                Rates: Tennis {formatPrice(pricing.tennis)}/hr • Padel {formatPrice(pricing.paddle)}/hr
+                                Rates: Tennis {formatPrice(pricing.tennis)}/hr • Padel {formatPrice(pricing.padel)}/hr
                             </p>
                             <button onClick={() => navigate('/booking')} className="book-now-btn" style={{ maxWidth: '200px', margin: '20px auto' }}>
                                 Find a Court
