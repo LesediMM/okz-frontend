@@ -217,7 +217,24 @@
       window.__OKZ_FALLBACKS.startLoadTimer();
     </script>
     
-    <!-- FAIL SAFE: Noscript fallback -->
+    <title>OKZ Sports | Padel & Tennis Booking</title>
+  </head>
+  <body>
+    <!-- FAIL SAFE: Loading indicator (shown immediately) -->
+    <div id="app">
+      <div class="fallback-shell">
+        <div class="fallback-card">
+          <div style="font-size: 4rem; margin-bottom: 1rem;">🎾</div>
+          <h1 class="fallback-title">OKZ Sports</h1>
+          <p class="fallback-text">Loading your experience...</p>
+          <div class="fallback-progress" role="progressbar" aria-label="Loading">
+            <div class="fallback-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAIL SAFE: Noscript fallback - MOVED TO BODY WHERE IT BELONGS -->
     <noscript>
       <style>
         #app {
@@ -248,23 +265,6 @@
         </div>
       </div>
     </noscript>
-    
-    <title>OKZ Sports | Padel & Tennis Booking</title>
-  </head>
-  <body>
-    <!-- FAIL SAFE: Loading indicator (shown immediately) -->
-    <div id="app">
-      <div class="fallback-shell">
-        <div class="fallback-card">
-          <div style="font-size: 4rem; margin-bottom: 1rem;">🎾</div>
-          <h1 class="fallback-title">OKZ Sports</h1>
-          <p class="fallback-text">Loading your experience...</p>
-          <div class="fallback-progress" role="progressbar" aria-label="Loading">
-            <div class="fallback-progress-bar"></div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- FAIL HARD: Script loading with integrity checks -->
     <script type="module" src="/src/main.jsx" 
