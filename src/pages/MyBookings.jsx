@@ -2,22 +2,187 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/MyBookings.css'; 
 
-// Location constants - UPDATED with Google Maps link
+// ===== FALLBACKS - Isolated inline (no extra files) =====
+const BookingsFallbacks = {
+    // Bookings cache (5 min TTL)
+    bookingsCache: {
+        data: null,
+        timestamp: null,
+        email: null,
+        
+        get(email) {
+            if (this.email === email && this.data && Date.now() - this.timestamp < 300000) {
+                return this.data;
+            }
+            return null;
+        },
+        
+        set(email, data) {
+            this.data = data;
+            this.timestamp = Date.now();
+            this.email = email;
+            try {
+                localStorage.setItem(`okz_bookings_${email}`, JSON.stringify({
+                    data: this.data,
+                    timestamp: this.timestamp
+                }));
+            } catch (e) {}
+        },
+        
+        loadFromStorage(email) {
+            try {
+                const saved = localStorage.getItem(`okz_bookings_${email}`);
+                if (saved) {
+                    const { data, timestamp } = JSON.parse(saved);
+                    if (Date.now() - timestamp < 300000) {
+                        this.data = data;
+                        this.timestamp = timestamp;
+                        this.email = email;
+                        return data;
+                    }
+                }
+            } catch (e) {}
+            return null;
+        }
+    },
+
+    // Pricing cache (24h TTL)
+    pricingCache: {
+        data: { padel: 400, tennis: 150 },
+        timestamp: Date.now(),
+        
+        get() {
+            if (Date.now() - this.timestamp < 86400000) return this.data;
+            return null;
+        },
+        
+        set(data) {
+            this.data = data;
+            this.timestamp = Date.now();
+            try {
+                localStorage.setItem('okz_pricing', JSON.stringify({
+                    data: this.data,
+                    timestamp: this.timestamp
+                }));
+            } catch (e) {}
+        },
+        
+        loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('okz_pricing');
+                if (saved) {
+                    const { data, timestamp } = JSON.parse(saved);
+                    if (Date.now() - timestamp < 86400000) {
+                        this.data = data;
+                        this.timestamp = timestamp;
+                    }
+                }
+            } catch (e) {}
+        }
+    },
+
+    // Retry with exponential backoff
+    async retry(fn, maxRetries = 3) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                return await fn();
+            } catch (err) {
+                const isLast = i === maxRetries - 1;
+                if (isLast) throw err;
+                
+                const wait = 1000 * Math.pow(2, i);
+                console.log(`🔄 Retry ${i + 1}/${maxRetries} in ${wait}ms`);
+                await new Promise(r => setTimeout(r, wait));
+            }
+        }
+    },
+
+    // Timeout wrapper (8 seconds)
+    async withTimeout(promise, ms = 8000) {
+        const timeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), ms)
+        );
+        return Promise.race([promise, timeout]);
+    },
+
+    // Network status
+    network: {
+        isOnline: navigator.onLine,
+        
+        init() {
+            window.addEventListener('online', () => { this.isOnline = true; });
+            window.addEventListener('offline', () => { this.isOnline = false; });
+        }
+    },
+
+    // Cancellation queue for retry
+    cancelQueue: [],
+    
+    addToCancelQueue(bookingId, userEmail) {
+        this.cancelQueue.push({ bookingId, userEmail, time: Date.now() });
+        try {
+            localStorage.setItem('okz_cancel_queue', JSON.stringify(this.cancelQueue));
+        } catch (e) {}
+    },
+    
+    loadCancelQueue() {
+        try {
+            const saved = localStorage.getItem('okz_cancel_queue');
+            if (saved) this.cancelQueue = JSON.parse(saved);
+        } catch (e) {}
+    },
+
+    // Error messages
+    messages: {
+        fetch: 'Unable to load bookings. Showing cached data.',
+        cancel: 'Unable to cancel. Will retry automatically.',
+        offline: 'You are offline. Showing last saved bookings.',
+        timeout: 'Request timed out. Please try again.',
+        default: 'Something went wrong. Please try again.'
+    },
+
+    // Track failures
+    failureCount: 0,
+    lastFailure: null,
+    
+    recordFailure() {
+        this.failureCount++;
+        this.lastFailure = Date.now();
+    },
+    
+    shouldBlock() {
+        if (this.failureCount >= 5 && Date.now() - this.lastFailure < 300000) {
+            return true; // Block for 5 minutes after 5 failures
+        }
+        if (Date.now() - this.lastFailure > 300000) {
+            this.failureCount = 0;
+        }
+        return false;
+    }
+};
+
+// Initialize
+BookingsFallbacks.pricingCache.loadFromStorage();
+BookingsFallbacks.loadCancelQueue();
+BookingsFallbacks.network.init();
+// ===== END FALLBACKS =====
+
+// Location constants - Google Maps only
 const GOOGLE_MAPS_LINK = "https://maps.app.goo.gl/iJEQqNvDZypno3PM9?g_st=iw";
-// Fallback Bing Maps link (general area, since exact coordinates might differ)
-const BING_MAPS_LINK = "https://www.bing.com/maps?q=OKZ+Sports+Cairo&cp=30.0444~31.2357&lvl=15&style=r";
-const CLUB_ADDRESS = "OKZ Sports Complex, Cairo, Egypt"; // Updated address
+const CLUB_ADDRESS = "OKZ Sports Complex, Cairo, Egypt";
 
 const MyBookings = ({ user }) => {
     const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [offlineNotice, setOfflineNotice] = useState(false);
     
     // FIX 1: Changed 'paddle' to 'padel' in initial state
-    const [pricing, setPricing] = useState({
-        padel: 400,
-        tennis: 150
+    const [pricing, setPricing] = useState(() => {
+        // FAIL SAFE: Load from cache on init
+        const cached = BookingsFallbacks.pricingCache.get();
+        return cached || { padel: 400, tennis: 150 };
     });
 
     // Fetch pricing info
@@ -27,17 +192,38 @@ const MyBookings = ({ user }) => {
 
     // FIX 2: Updated fetchPricing to use 'padel' instead of 'paddle'
     const fetchPricing = async () => {
+        // FAIL HARD: Check circuit breaker
+        if (BookingsFallbacks.shouldBlock()) {
+            console.log('⚠️ Circuit breaker open, using cached pricing');
+            return;
+        }
+
         try {
-            const response = await fetch('https://okz.onrender.com/api/status');
+            // FAIL HARD: Add timeout
+            const response = await BookingsFallbacks.withTimeout(
+                fetch('https://okz.onrender.com/api/status')
+            );
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
             const data = await response.json();
             if (data?.system?.pricing) {
-                setPricing({
+                const newPricing = {
                     padel: parseInt(data.system.pricing.padel) || 400,
                     tennis: parseInt(data.system.pricing.tennis) || 150
-                });
+                };
+                setPricing(newPricing);
+                // FAIL SAFE: Update cache
+                BookingsFallbacks.pricingCache.set(newPricing);
+                BookingsFallbacks.failureCount = 0;
             }
         } catch (error) {
             console.error('Failed to fetch pricing:', error);
+            BookingsFallbacks.recordFailure();
+            
+            // FAIL SAFE: Use cached pricing
+            const cached = BookingsFallbacks.pricingCache.get();
+            if (cached) setPricing(cached);
         }
     };
 
@@ -52,31 +238,70 @@ const MyBookings = ({ user }) => {
             return () => clearTimeout(timeout);
         }
 
+        // FAIL SAFE: Check cache first if offline
+        if (!BookingsFallbacks.network.isOnline) {
+            const cached = BookingsFallbacks.bookingsCache.loadFromStorage(user.email);
+            if (cached) {
+                setBookings(cached);
+                setOfflineNotice(true);
+                setLoading(false);
+                return;
+            }
+        }
+
+        // FAIL HARD: Check circuit breaker
+        if (BookingsFallbacks.shouldBlock()) {
+            setError('Too many failed attempts. Please try again later.');
+            setLoading(false);
+            return;
+        }
+
         try {
-            const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
-                method: 'GET',
-                headers: {
-                    'x-user-email': user.email,
-                    'Content-Type': 'application/json'
-                }
+            // FAIL HARD: Add timeout and retry
+            const response = await BookingsFallbacks.retry(async () => {
+                return await BookingsFallbacks.withTimeout(
+                    fetch('https://okz.onrender.com/api/v1/bookings', {
+                        method: 'GET',
+                        headers: {
+                            'x-user-email': user.email,
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                );
             });
 
-            // Handle non-JSON responses (e.g., server 500 HTML errors)
+            // Handle non-JSON responses
             const contentType = response.headers.get("content-type");
             if (!contentType || !contentType.includes("application/json")) {
-                throw new Error("Server returned an invalid response. Please try again later.");
+                throw new Error("Server returned an invalid response.");
             }
 
             const result = await response.json();
 
             if (response.ok && result.status === 'success') {
-                // ✅ FIX: Null-safe data mapping
-                setBookings(result?.data?.bookings || []);
+                const bookingsData = result?.data?.bookings || [];
+                setBookings(bookingsData);
+                setError(null);
+                BookingsFallbacks.failureCount = 0;
+                
+                // FAIL SAFE: Update cache
+                BookingsFallbacks.bookingsCache.set(user.email, bookingsData);
             } else {
-                setError(result.message || 'Failed to load bookings.');
+                throw new Error(result.message || 'Failed to load bookings.');
             }
         } catch (err) {
-            setError(err.message || 'Unable to connect to server. Please check your connection.');
+            console.error('Fetch error:', err);
+            BookingsFallbacks.recordFailure();
+            
+            // FAIL SAFE: Try cache
+            const cached = BookingsFallbacks.bookingsCache.loadFromStorage(user.email);
+            if (cached) {
+                setBookings(cached);
+                setOfflineNotice(true);
+                setError(BookingsFallbacks.messages.fetch);
+            } else {
+                setError(err.message || 'Unable to connect to server.');
+            }
         } finally {
             setLoading(false);
         }
@@ -85,6 +310,36 @@ const MyBookings = ({ user }) => {
     useEffect(() => {
         fetchBookings();
     }, [fetchBookings]);
+
+    // Process cancel queue when online
+    useEffect(() => {
+        const processCancelQueue = async () => {
+            if (BookingsFallbacks.network.isOnline && BookingsFallbacks.cancelQueue.length > 0 && user?.email) {
+                const queue = [...BookingsFallbacks.cancelQueue];
+                BookingsFallbacks.cancelQueue = [];
+                
+                for (const item of queue) {
+                    if (item.userEmail === user.email) {
+                        try {
+                            await fetch(`https://okz.onrender.com/api/v1/bookings/${item.bookingId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'x-user-email': user.email,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                        } catch (e) {
+                            // Re-queue if fails
+                            BookingsFallbacks.addToCancelQueue(item.bookingId, user.email);
+                        }
+                    }
+                }
+                fetchBookings(); // Refresh
+            }
+        };
+        
+        processCancelQueue();
+    }, [user, BookingsFallbacks.network.isOnline]);
 
     /**
      * ✅ FIX: Null-safe date formatting
@@ -141,27 +396,44 @@ const MyBookings = ({ user }) => {
             return;
         }
 
+        // FAIL SAFE: Handle offline
+        if (!BookingsFallbacks.network.isOnline) {
+            BookingsFallbacks.addToCancelQueue(bookingId, user.email);
+            alert('You are offline. Cancellation will be processed when online.');
+            return;
+        }
+
         try {
-            const response = await fetch(`https://okz.onrender.com/api/v1/bookings/${bookingId}`, {
-                method: 'DELETE',
-                headers: {
-                    'x-user-email': user.email,
-                    'Content-Type': 'application/json'
-                }
-            });
+            // FAIL HARD: Add timeout
+            const response = await BookingsFallbacks.withTimeout(
+                fetch(`https://okz.onrender.com/api/v1/bookings/${bookingId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'x-user-email': user.email,
+                        'Content-Type': 'application/json'
+                    }
+                })
+            );
 
             const data = await response.json();
 
             if (response.ok) {
                 // Refresh bookings list
-                fetchBookings();
+                await fetchBookings();
                 alert('Booking cancelled successfully');
             } else {
                 alert(data.message || 'Failed to cancel booking');
             }
         } catch (error) {
             console.error('Cancellation error:', error);
-            alert('Failed to cancel booking. Please try again.');
+            
+            // FAIL SAFE: Queue for retry
+            if (!BookingsFallbacks.network.isOnline || error.message === 'Request timeout') {
+                BookingsFallbacks.addToCancelQueue(bookingId, user.email);
+                alert(BookingsFallbacks.messages.cancel);
+            } else {
+                alert('Failed to cancel booking. Please try again.');
+            }
         }
     };
 
@@ -191,6 +463,25 @@ const MyBookings = ({ user }) => {
 
     return (
         <div className="bookings-page-container apple-fade-in">
+            {/* FAIL SAFE: Offline/error notices */}
+            {offlineNotice && (
+                <div style={{
+                    position: 'fixed',
+                    top: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: '#ffc107',
+                    color: '#000',
+                    padding: '8px 16px',
+                    borderRadius: '30px',
+                    fontSize: '0.85rem',
+                    zIndex: 1000,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }}>
+                    📱 Offline mode - Showing cached data
+                </div>
+            )}
+
             <header className="page-header" style={{ marginBottom: '2.5rem' }}>
                 <Link to="/dashboard" className="see-all-btn" style={{ textDecoration: 'none', marginBottom: '1rem', display: 'inline-block' }}>
                     ← Dashboard
@@ -198,7 +489,7 @@ const MyBookings = ({ user }) => {
                 <h1 className="hero-title" style={{ fontSize: '2.5rem' }}>My Reservations</h1>
                 <p className="text-muted">Manage your schedule and match history.</p>
                 
-                {/* FIX 5: Pricing Summary - changed 'paddle' to 'padel' */}
+                {/* FIX 5: Pricing Summary */}
                 <div className="pricing-summary" style={{
                     display: 'flex',
                     gap: '20px',
@@ -221,6 +512,22 @@ const MyBookings = ({ user }) => {
             ) : error ? (
                 <div className="glass-panel" style={{ padding: '20px', color: 'var(--system-red)', textAlign: 'center', margin: '20px' }}>
                     {error}
+                    {offlineNotice && (
+                        <button 
+                            onClick={fetchBookings}
+                            style={{
+                                marginTop: '10px',
+                                padding: '8px 16px',
+                                background: 'var(--brand-navy)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Retry
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="bookings-stack">
@@ -252,7 +559,7 @@ const MyBookings = ({ user }) => {
                                             </span>
                                         </h3>
                                         
-                                        {/* Ticket Details - Date, Time, Duration */}
+                                        {/* Ticket Details */}
                                         <div className="ticket-details" style={{ display: 'flex', gap: '24px', marginTop: 'auto' }}>
                                             <div className="detail-item">
                                                 <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>DATE</span>
@@ -268,7 +575,7 @@ const MyBookings = ({ user }) => {
                                             </div>
                                         </div>
 
-                                        {/* ✨ NEW LOCATION BLOCK ✨ - UPDATED with Google Maps */}
+                                        {/* LOCATION BLOCK - Google Maps Only */}
                                         <div className="location-footer" style={{ 
                                             marginTop: '20px', 
                                             paddingTop: '15px', 
@@ -285,47 +592,27 @@ const MyBookings = ({ user }) => {
                                                 </div>
                                             </div>
                                             
-                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                                <a 
-                                                    href={GOOGLE_MAPS_LINK}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="map-link-action"
-                                                    style={{
-                                                        textDecoration: 'none',
-                                                        fontSize: '0.75rem',
-                                                        color: '#4285F4', // Google Blue
-                                                        fontWeight: '700',
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        gap: '4px',
-                                                        width: 'fit-content'
-                                                    }}
-                                                >
-                                                    📱 Open in Google Maps →
-                                                </a>
-                                                
-                                                <a 
-                                                    href={BING_MAPS_LINK}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="map-link-action"
-                                                    style={{
-                                                        textDecoration: 'none',
-                                                        fontSize: '0.75rem',
-                                                        color: '#0078d4', // Bing Blue
-                                                        fontWeight: '700',
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        gap: '4px',
-                                                        width: 'fit-content'
-                                                    }}
-                                                >
-                                                    🗺️ Open in Bing Maps
-                                                </a>
-                                            </div>
+                                            {/* Google Maps Link */}
+                                            <a 
+                                                href={GOOGLE_MAPS_LINK}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="map-link-action"
+                                                style={{
+                                                    textDecoration: 'none',
+                                                    fontSize: '0.75rem',
+                                                    color: '#4285F4',
+                                                    fontWeight: '700',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    width: 'fit-content'
+                                                }}
+                                            >
+                                                📱 Open in Google Maps →
+                                            </a>
 
-                                            {/* Optional: Embedded Map Preview - Updated with Google Maps embed */}
+                                            {/* Google Maps Embed */}
                                             <div style={{ 
                                                 marginTop: '10px', 
                                                 borderRadius: '8px', 
@@ -349,7 +636,6 @@ const MyBookings = ({ user }) => {
                                                 </iframe>
                                             </div>
                                             
-                                            {/* Quick location note */}
                                             <div style={{
                                                 fontSize: '0.65rem',
                                                 color: '#666',
@@ -381,7 +667,7 @@ const MyBookings = ({ user }) => {
                                             )}
                                         </div>
                                         
-                                        {/* Cancel button for active bookings */}
+                                        {/* Cancel button */}
                                         {b?.status === 'active' && (
                                             <button
                                                 onClick={() => handleCancel(b._id)}
@@ -406,7 +692,6 @@ const MyBookings = ({ user }) => {
                             );
                         })
                     ) : (
-                        // FIX 6: Empty state - changed 'paddle' to 'padel'
                         <div className="glass-panel empty-state" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
                             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎾</div>
                             <h3>No sessions yet</h3>

@@ -2,15 +2,164 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/Dashboard.css';
 
+// ===== FALLBACKS - Isolated inline (no extra files) =====
+const DashboardFallbacks = {
+    // Recent bookings cache (2 min TTL)
+    bookingsCache: {
+        data: null,
+        timestamp: null,
+        email: null,
+        
+        get(email) {
+            if (this.email === email && this.data && Date.now() - this.timestamp < 120000) {
+                return this.data;
+            }
+            return null;
+        },
+        
+        set(email, data) {
+            this.data = data;
+            this.timestamp = Date.now();
+            this.email = email;
+            try {
+                localStorage.setItem(`okz_dashboard_${email}`, JSON.stringify({
+                    data: this.data,
+                    timestamp: this.timestamp
+                }));
+            } catch (e) {}
+        },
+        
+        loadFromStorage(email) {
+            try {
+                const saved = localStorage.getItem(`okz_dashboard_${email}`);
+                if (saved) {
+                    const { data, timestamp } = JSON.parse(saved);
+                    if (Date.now() - timestamp < 120000) {
+                        this.data = data;
+                        this.timestamp = timestamp;
+                        this.email = email;
+                        return data;
+                    }
+                }
+            } catch (e) {}
+            return null;
+        }
+    },
+
+    // Pricing cache (24h TTL)
+    pricingCache: {
+        data: { padel: 400, tennis: 150 },
+        timestamp: Date.now(),
+        
+        get() {
+            if (Date.now() - this.timestamp < 86400000) return this.data;
+            return null;
+        },
+        
+        set(data) {
+            this.data = data;
+            this.timestamp = Date.now();
+            try {
+                localStorage.setItem('okz_pricing', JSON.stringify({
+                    data: this.data,
+                    timestamp: this.timestamp
+                }));
+            } catch (e) {}
+        },
+        
+        loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('okz_pricing');
+                if (saved) {
+                    const { data, timestamp } = JSON.parse(saved);
+                    if (Date.now() - timestamp < 86400000) {
+                        this.data = data;
+                        this.timestamp = timestamp;
+                    }
+                }
+            } catch (e) {}
+        }
+    },
+
+    // Retry with exponential backoff
+    async retry(fn, maxRetries = 2) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                return await fn();
+            } catch (err) {
+                const isLast = i === maxRetries - 1;
+                if (isLast) throw err;
+                
+                const wait = 1000 * Math.pow(2, i);
+                console.log(`🔄 Dashboard retry ${i + 1}/${maxRetries} in ${wait}ms`);
+                await new Promise(r => setTimeout(r, wait));
+            }
+        }
+    },
+
+    // Timeout wrapper (6 seconds - shorter for dashboard)
+    async withTimeout(promise, ms = 6000) {
+        const timeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), ms)
+        );
+        return Promise.race([promise, timeout]);
+    },
+
+    // Network status
+    network: {
+        isOnline: navigator.onLine,
+        
+        init() {
+            window.addEventListener('online', () => { this.isOnline = true; });
+            window.addEventListener('offline', () => { this.isOnline = false; });
+        }
+    },
+
+    // Track failures
+    failureCount: 0,
+    lastFailure: null,
+    
+    recordFailure() {
+        this.failureCount++;
+        this.lastFailure = Date.now();
+    },
+    
+    shouldBlock() {
+        if (this.failureCount >= 3 && Date.now() - this.lastFailure < 300000) {
+            return true; // Block for 5 minutes after 3 failures
+        }
+        if (Date.now() - this.lastFailure > 300000) {
+            this.failureCount = 0;
+        }
+        return false;
+    },
+
+    // Error messages
+    messages: {
+        bookings: 'Unable to load recent activity. Showing cached data.',
+        pricing: 'Using cached rates.',
+        offline: 'You are offline - showing cached data.',
+        timeout: 'Request timed out. Please check your connection.',
+        default: 'Something went wrong.'
+    }
+};
+
+// Initialize
+DashboardFallbacks.pricingCache.loadFromStorage();
+DashboardFallbacks.network.init();
+// ===== END FALLBACKS =====
+
 const UserDashboard = ({ user }) => {
     const navigate = useNavigate();
     const [recentBookings, setRecentBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [offlineNotice, setOfflineNotice] = useState(false);
     
     // FIX 1: Changed 'paddle' to 'padel' in initial state
-    const [pricing, setPricing] = useState({
-        padel: 400,
-        tennis: 150
+    const [pricing, setPricing] = useState(() => {
+        // FAIL SAFE: Load from cache on init
+        const cached = DashboardFallbacks.pricingCache.get();
+        return cached || { padel: 400, tennis: 150 };
     });
 
     useEffect(() => {
@@ -28,31 +177,86 @@ const UserDashboard = ({ user }) => {
         // Guard against calling API without a valid user email
         if (!user?.email) return;
 
+        // FAIL SAFE: Check cache first if offline
+        if (!DashboardFallbacks.network.isOnline) {
+            const cached = DashboardFallbacks.bookingsCache.loadFromStorage(user.email);
+            if (cached) {
+                setRecentBookings(cached);
+                setOfflineNotice(true);
+                setLoading(false);
+                return;
+            }
+        }
+
+        // FAIL HARD: Check circuit breaker
+        if (DashboardFallbacks.shouldBlock()) {
+            setOfflineNotice(true);
+            setLoading(false);
+            return;
+        }
+
         try {
-            const response = await fetch('https://okz.onrender.com/api/v1/bookings', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-user-email': user.email
+            // FAIL HARD: Fetch bookings with timeout and retry
+            let bookingsData = [];
+            try {
+                const response = await DashboardFallbacks.retry(async () => {
+                    return await DashboardFallbacks.withTimeout(
+                        fetch('https://okz.onrender.com/api/v1/bookings', {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-user-email': user.email
+                            }
+                        })
+                    );
+                });
+
+                if (response.ok) {
+                    const res = await response.json();
+                    if (res.status === 'success') {
+                        bookingsData = res?.data?.bookings?.slice(0, 3) || [];
+                        setRecentBookings(bookingsData);
+                        // FAIL SAFE: Update cache
+                        DashboardFallbacks.bookingsCache.set(user.email, bookingsData);
+                    }
                 }
-            });
-            const res = await response.json();
-            if (response.ok && res.status === 'success') {
-                // Null-safe access to the nested data structure
-                const bookings = res?.data?.bookings || [];
-                setRecentBookings(bookings.slice(0, 3));
+            } catch (bookingsError) {
+                console.error('Bookings fetch error:', bookingsError);
+                DashboardFallbacks.recordFailure();
+                
+                // FAIL SAFE: Try cache
+                const cached = DashboardFallbacks.bookingsCache.loadFromStorage(user.email);
+                if (cached) {
+                    setRecentBookings(cached);
+                    setOfflineNotice(true);
+                }
             }
 
-            // FIX 2: Updated API fetch logic to handle both 'padel' and 'paddle' for backward compatibility
-            const statusResponse = await fetch('https://okz.onrender.com/api/status');
-            const statusData = await statusResponse.json();
-            if (statusData?.system?.pricing) {
-                setPricing({
-                    // Map the backend 'padel' field (with fallback to 'paddle' for backward compatibility)
-                    padel: parseInt(statusData.system.pricing.padel || statusData.system.pricing.paddle) || 400,
-                    tennis: parseInt(statusData.system.pricing.tennis) || 150
-                });
+            // FAIL HARD: Fetch pricing with timeout (don't block if this fails)
+            try {
+                const statusResponse = await DashboardFallbacks.withTimeout(
+                    fetch('https://okz.onrender.com/api/status')
+                );
+
+                if (statusResponse.ok) {
+                    const statusData = await statusResponse.json();
+                    if (statusData?.system?.pricing) {
+                        const newPricing = {
+                            padel: parseInt(statusData.system.pricing.padel || statusData.system.pricing.paddle) || 400,
+                            tennis: parseInt(statusData.system.pricing.tennis) || 150
+                        };
+                        setPricing(newPricing);
+                        // FAIL SAFE: Update cache
+                        DashboardFallbacks.pricingCache.set(newPricing);
+                    }
+                }
+            } catch (pricingError) {
+                console.error('Pricing fetch error:', pricingError);
+                // FAIL SAFE: Keep using cached pricing
+                const cached = DashboardFallbacks.pricingCache.get();
+                if (cached) setPricing(cached);
             }
+
         } catch (error) {
             console.error('Dashboard Activity Error:', error);
         } finally {
@@ -94,6 +298,25 @@ const UserDashboard = ({ user }) => {
 
     return (
         <div className="dashboard-container apple-fade-in">
+            {/* FAIL SAFE: Offline/notice banner */}
+            {offlineNotice && (
+                <div style={{
+                    position: 'fixed',
+                    top: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: '#ffc107',
+                    color: '#000',
+                    padding: '8px 16px',
+                    borderRadius: '30px',
+                    fontSize: '0.85rem',
+                    zIndex: 1000,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }}>
+                    📱 {DashboardFallbacks.network.isOnline ? 'Using cached data' : 'Offline mode - showing cached data'}
+                </div>
+            )}
+
             {/* --- Branded Header --- */}
             <header className="dashboard-header">
                 <div className="greeting-group">
@@ -178,6 +401,26 @@ const UserDashboard = ({ user }) => {
                             </button>
                         </div>
                     )}
+
+                    {/* FAIL SAFE: Manual retry button if showing cached data */}
+                    {offlineNotice && recentBookings.length > 0 && (
+                        <button
+                            onClick={fetchDashboardData}
+                            style={{
+                                marginTop: '15px',
+                                padding: '8px',
+                                background: 'none',
+                                border: '1px solid var(--brand-navy)',
+                                borderRadius: '20px',
+                                color: 'var(--brand-navy)',
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                width: '100%'
+                            }}
+                        >
+                            ⟳ Retry
+                        </button>
+                    )}
                 </div>
 
                 {/* --- Club Stats: Info Widget --- */}
@@ -210,6 +453,19 @@ const UserDashboard = ({ user }) => {
                             <span className="text-muted" style={{ fontSize: '0.75rem' }}>📍 Cairo, Egypt</span>
                         </div>
                     </div>
+                    
+                    {/* FAIL SAFE: Show cache indicator */}
+                    {offlineNotice && (
+                        <div style={{
+                            marginTop: '15px',
+                            fontSize: '0.7rem',
+                            color: '#666',
+                            textAlign: 'center',
+                            fontStyle: 'italic'
+                        }}>
+                            ⚡ Rates may be cached
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

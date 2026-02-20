@@ -2,6 +2,152 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Booking.css';
 
+// ===== FALLBACKS - Isolated inline (no extra files) =====
+const BookingFallbacks = {
+    // Pricing cache (24h TTL)
+    pricingCache: {
+        data: { padel: 400, tennis: 150 },
+        timestamp: Date.now(),
+        
+        get() {
+            if (Date.now() - this.timestamp < 86400000) return this.data;
+            return null;
+        },
+        
+        set(data) {
+            this.data = data;
+            this.timestamp = Date.now();
+            try {
+                localStorage.setItem('okz_pricing', JSON.stringify({
+                    data: this.data,
+                    timestamp: this.timestamp
+                }));
+            } catch (e) {}
+        },
+        
+        loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('okz_pricing');
+                if (saved) {
+                    const { data, timestamp } = JSON.parse(saved);
+                    if (Date.now() - timestamp < 86400000) {
+                        this.data = data;
+                        this.timestamp = timestamp;
+                    }
+                }
+            } catch (e) {}
+        }
+    },
+
+    // Request queue for offline bookings
+    bookingQueue: [],
+    
+    loadQueue() {
+        try {
+            const saved = localStorage.getItem('okz_booking_queue');
+            if (saved) this.bookingQueue = JSON.parse(saved);
+        } catch (e) {}
+    },
+    
+    saveQueue() {
+        try {
+            localStorage.setItem('okz_booking_queue', JSON.stringify(this.bookingQueue));
+        } catch (e) {}
+    },
+    
+    addToQueue(bookingData, userEmail) {
+        this.bookingQueue.push({
+            ...bookingData,
+            userEmail,
+            queuedAt: Date.now(),
+            id: `queue-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+        });
+        this.saveQueue();
+    },
+    
+    // Retry with exponential backoff
+    async retry(fn, maxRetries = 3) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                return await fn();
+            } catch (err) {
+                const isLast = i === maxRetries - 1;
+                if (isLast) throw err;
+                
+                // Don't retry validation errors
+                if (err.message?.includes('Validation')) throw err;
+                
+                const wait = 1000 * Math.pow(2, i);
+                console.log(`🔄 Retry ${i + 1}/${maxRetries} in ${wait}ms`);
+                await new Promise(r => setTimeout(r, wait));
+            }
+        }
+    },
+
+    // Timeout wrapper (8 seconds)
+    async withTimeout(promise, ms = 8000) {
+        const timeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), ms)
+        );
+        return Promise.race([promise, timeout]);
+    },
+
+    // Network status tracker
+    network: {
+        isOnline: navigator.onLine,
+        
+        init() {
+            window.addEventListener('online', () => {
+                this.isOnline = true;
+                this.processQueue();
+            });
+            window.addEventListener('offline', () => { this.isOnline = false; });
+        },
+        
+        processQueue() {
+            if (this.isOnline && BookingFallbacks.bookingQueue.length > 0) {
+                console.log(`🔄 Processing ${BookingFallbacks.bookingQueue.length} queued bookings...`);
+                // Will be processed by component when user returns
+            }
+        }
+    },
+
+    // Error messages (user-friendly)
+    messages: {
+        network: 'Network connection unstable. Your booking has been queued.',
+        timeout: 'Request timed out. Please try again.',
+        server: 'Server is waking up. Your booking is queued.',
+        validation: 'Please check your information.',
+        offline: 'You are offline. Booking saved locally.',
+        default: 'Unable to book. Please try again.'
+    },
+
+    // Track failed attempts (simple circuit breaker)
+    failureCount: 0,
+    lastFailure: null,
+    
+    recordFailure() {
+        this.failureCount++;
+        this.lastFailure = Date.now();
+    },
+    
+    shouldBlock() {
+        if (this.failureCount >= 5 && Date.now() - this.lastFailure < 300000) {
+            return true; // Block for 5 minutes after 5 failures
+        }
+        if (Date.now() - this.lastFailure > 300000) {
+            this.failureCount = 0; // Reset after 5 minutes
+        }
+        return false;
+    }
+};
+
+// Initialize
+BookingFallbacks.pricingCache.loadFromStorage();
+BookingFallbacks.loadQueue();
+BookingFallbacks.network.init();
+// ===== END FALLBACKS =====
+
 const Booking = ({ user }) => {
     const navigate = useNavigate();
     
@@ -11,15 +157,17 @@ const Booking = ({ user }) => {
         courtNumber: 1,
         timeSlot: '',
         duration: 1,
-        phoneNumber: '' // 👈 Add this line
+        phoneNumber: ''
     });
 
-    const [pricing, setPricing] = useState({
-        padel: 400,
-        tennis: 150
+    const [pricing, setPricing] = useState(() => {
+        // FAIL SAFE: Load from cache on init
+        const cached = BookingFallbacks.pricingCache.get();
+        return cached || { padel: 400, tennis: 150 };
     });
     
     const [isProcessing, setIsProcessing] = useState(false);
+    const [offlineNotice, setOfflineNotice] = useState(false);
 
     // ✅ ADD THIS HELPER FUNCTION - Professional Phone Validation
     const validatePhoneNumber = (phone) => {
@@ -33,17 +181,42 @@ const Booking = ({ user }) => {
     }, []);
 
     const fetchPricing = async () => {
+        // FAIL HARD: Check circuit breaker
+        if (BookingFallbacks.shouldBlock()) {
+            console.log('⚠️ Circuit breaker open, using cached pricing');
+            return;
+        }
+
         try {
-            const response = await fetch('https://okz.onrender.com/api/status');
+            // FAIL HARD: Add timeout to fetch
+            const response = await BookingFallbacks.withTimeout(
+                fetch('https://okz.onrender.com/api/status')
+            );
+            
+            // FAIL HARD: Check response
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
             const data = await response.json();
+            
             if (data?.system?.pricing) {
-                setPricing({
+                const newPricing = {
                     padel: parseInt(data.system.pricing.padel) || 400,
                     tennis: parseInt(data.system.pricing.tennis) || 150
-                });
+                };
+                setPricing(newPricing);
+                // FAIL SAFE: Update cache
+                BookingFallbacks.pricingCache.set(newPricing);
+                BookingFallbacks.failureCount = 0; // Reset on success
             }
         } catch (error) {
             console.error('Failed to fetch pricing:', error);
+            BookingFallbacks.recordFailure();
+            
+            // FAIL SAFE: Use cached pricing
+            const cached = BookingFallbacks.pricingCache.get();
+            if (cached) {
+                setPricing(cached);
+            }
         }
     };
 
@@ -116,6 +289,37 @@ const Booking = ({ user }) => {
         }));
     };
 
+    // FAIL SAFE: Process queued bookings when online
+    useEffect(() => {
+        const processQueue = async () => {
+            if (navigator.onLine && BookingFallbacks.bookingQueue.length > 0 && user?.email) {
+                const queue = [...BookingFallbacks.bookingQueue];
+                BookingFallbacks.bookingQueue = [];
+                BookingFallbacks.saveQueue();
+                
+                for (const queued of queue) {
+                    if (queued.userEmail === user.email) {
+                        try {
+                            await fetch('https://okz.onrender.com/api/v1/bookings', {
+                                method: 'POST',
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                    'x-user-email': user.email 
+                                },
+                                body: JSON.stringify(queued)
+                            });
+                        } catch (e) {
+                            // Re-queue if fails
+                            BookingFallbacks.addToQueue(queued, user.email);
+                        }
+                    }
+                }
+            }
+        };
+        
+        processQueue();
+    }, [user, navigator.onLine]);
+
     const handleBooking = async () => {
         // 🛡️ Guard 1: Redirect if no user
         if (!user) { 
@@ -136,36 +340,65 @@ const Booking = ({ user }) => {
             return; 
         }
 
+        // FAIL HARD: Check circuit breaker
+        if (BookingFallbacks.shouldBlock()) {
+            alert("⚠️ Too many failed attempts. Please try again in 5 minutes.");
+            return;
+        }
+
+        // FAIL SAFE: Handle offline mode
+        if (!navigator.onLine) {
+            BookingFallbacks.addToQueue(bookingData, user.email);
+            setOfflineNotice(true);
+            alert(BookingFallbacks.messages.offline);
+            setTimeout(() => setOfflineNotice(false), 3000);
+            return;
+        }
+
         setIsProcessing(true); // Start Spinner
 
         try {
-            const res = await fetch('https://okz.onrender.com/api/v1/bookings', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    // 🛡️ Guard 4: Safe Property Access
-                    'x-user-email': user?.email 
-                },
-                body: JSON.stringify(bookingData)
+            // FAIL HARD: Retry logic with timeout
+            const response = await BookingFallbacks.retry(async () => {
+                return await BookingFallbacks.withTimeout(
+                    fetch('https://okz.onrender.com/api/v1/bookings', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'x-user-email': user?.email 
+                        },
+                        body: JSON.stringify(bookingData)
+                    })
+                );
             });
 
-            const data = await res.json();
+            const data = await response.json();
 
-            if (res.ok) { 
-                // Success case - show success message with price
+            if (response.ok) { 
+                // Success case
+                BookingFallbacks.failureCount = 0; // Reset on success
                 alert(`✅ Booking confirmed! Total: ${calculateTotalPrice()} EGP`);
                 navigate('/my-bookings'); 
             } else { 
-                // 🛡️ Handle the specific array format from your express-validator
+                // Handle validation errors
+                BookingFallbacks.recordFailure();
                 const errorMessage = data.errors 
                     ? data.errors.map(e => e.message).join(", ") 
                     : data.message;
                 alert(`Validation Error: ${errorMessage}`); 
             }
         } catch (e) { 
-            // Handle Network failures
+            // Handle failures
+            BookingFallbacks.recordFailure();
             console.error("Connection Error:", e);
-            alert("Connection error. The server might be waking up."); 
+            
+            // FAIL SAFE: Queue booking if offline/error
+            if (!navigator.onLine || e.message === 'Request timeout') {
+                BookingFallbacks.addToQueue(bookingData, user.email);
+                alert(BookingFallbacks.messages.offline);
+            } else {
+                alert(BookingFallbacks.messages.default);
+            }
         } finally { 
             // 🛡️ Guard 5: The "Loading" Killer (Always reset state)
             setIsProcessing(false); 
@@ -177,6 +410,25 @@ const Booking = ({ user }) => {
 
     return (
         <div className="booking-page-container apple-fade-in">
+            {/* FAIL SAFE: Offline notice */}
+            {offlineNotice && (
+                <div style={{
+                    position: 'fixed',
+                    top: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: '#ffc107',
+                    color: '#000',
+                    padding: '8px 16px',
+                    borderRadius: '30px',
+                    fontSize: '0.85rem',
+                    zIndex: 1000,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }}>
+                    📱 Offline mode - Your booking is saved locally
+                </div>
+            )}
+
             <header className="page-header" style={{ textAlign: 'center', marginBottom: '3rem' }}>
                 <h1 className="hero-title">Reserve a Court</h1>
                 <p className="text-muted">Premium Padel and Tennis facilities in Cairo.</p>
@@ -217,7 +469,7 @@ const Booking = ({ user }) => {
                                 type="date" 
                                 name="date" 
                                 min={getToday()} 
-                                max={getMaxDate()} // 🛡️ Prevents "30 days in advance" error
+                                max={getMaxDate()}
                                 value={bookingData.date} 
                                 onChange={handleInputChange} 
                             />
@@ -233,7 +485,7 @@ const Booking = ({ user }) => {
                         </div>
                     </div>
 
-                    {/* Phone Number Input Field - UPDATED with pattern attribute and better placeholder */}
+                    {/* Phone Number Input Field */}
                     <div className="field-group" style={{ marginBottom: '15px' }}>
                         <label className="input-label-tiny">CONTACT PHONE NUMBER</label>
                         <input 
@@ -242,7 +494,7 @@ const Booking = ({ user }) => {
                             placeholder="e.g., +20 123 456 7890"
                             value={bookingData.phoneNumber} 
                             onChange={handleInputChange} 
-                            pattern="[0-9+\s-]{8,15}" // Browser-level constraint
+                            pattern="[0-9+\s-]{8,15}"
                             required
                             style={{
                                 width: '100%',
@@ -282,7 +534,7 @@ const Booking = ({ user }) => {
                     </div>
                 </section>
 
-                {/* --- Step 2: Time Grid - UPDATED for hourly slots with Cairo timezone --- */}
+                {/* --- Step 2: Time Grid --- */}
                 <section className="time-picker-section">
                     <h3 className="section-heading">
                         Available Slots 

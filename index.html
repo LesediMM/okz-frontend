@@ -3,11 +3,284 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- ===== FALLBACKS - Isolated inline (no extra files) ===== -->
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/src/styles/global.css" as="style" />
+    <link rel="preload" href="/src/main.jsx" as="script" crossorigin />
+    
+    <!-- FAIL SAFE: Fallback styles if main CSS fails -->
+    <style id="fallback-styles">
+      /* Minimal critical CSS - only what's needed for initial render */
+      .fallback-shell {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+        margin: 0;
+        padding: 20px;
+      }
+      .fallback-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        padding: 40px;
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      }
+      .fallback-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1a2b56;
+        margin: 20px 0 10px;
+      }
+      .fallback-text {
+        color: #666;
+        margin-bottom: 30px;
+        line-height: 1.6;
+      }
+      .fallback-button {
+        background: #1a2b56;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      .fallback-button:hover {
+        background: #2a3b66;
+      }
+      .fallback-progress {
+        width: 200px;
+        height: 4px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        margin: 30px auto 0;
+        overflow: hidden;
+      }
+      .fallback-progress-bar {
+        width: 30%;
+        height: 100%;
+        background: #1a2b56;
+        border-radius: 4px;
+        animation: loading 1.5s infinite ease-in-out;
+      }
+      @keyframes loading {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0,0,0,0);
+        border: 0;
+      }
+    </style>
+    
+    <!-- FAIL HARD: Script error recovery -->
+    <script>
+      // FAIL HARD: Global error handler for script loading
+      window.__OKZ_FALLBACKS = {
+        // Track loading state
+        loadingState: {
+          app: false,
+          main: false,
+          error: null
+        },
+        
+        // Show fallback UI on error
+        showFallbackUI(error) {
+          const appDiv = document.getElementById('app');
+          if (!appDiv) return;
+          
+          appDiv.innerHTML = `
+            <div class="fallback-shell">
+              <div class="fallback-card">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">🎾</div>
+                <h1 class="fallback-title">OKZ Sports</h1>
+                <p class="fallback-text">
+                  Unable to load the application.<br>
+                  <span style="font-size: 0.9rem; color: #999; display: block; margin-top: 10px;">
+                    ${error?.message || 'Connection error'}
+                  </span>
+                </p>
+                <button class="fallback-button" onclick="window.location.reload()">
+                  Refresh Page
+                </button>
+                <div class="fallback-progress" role="progressbar" aria-label="Loading">
+                  <div class="fallback-progress-bar"></div>
+                </div>
+              </div>
+            </div>
+          `;
+        },
+        
+        // FAIL SAFE: Check if app is taking too long to load
+        startLoadTimer() {
+          setTimeout(() => {
+            const appDiv = document.getElementById('app');
+            if (appDiv && appDiv.children.length === 0) {
+              console.warn('[HTML] App load timeout - showing fallback');
+              this.showFallbackUI(new Error('Loading timeout'));
+            }
+          }, 5000); // 5 second timeout
+        },
+        
+        // FAIL HARD: Validate HTML structure
+        validateStructure() {
+          const appDiv = document.getElementById('app');
+          if (!appDiv) {
+            console.error('[HTML] Missing #app element - creating fallback');
+            const newApp = document.createElement('div');
+            newApp.id = 'app';
+            document.body.appendChild(newApp);
+          }
+          
+          // Check if body has proper styling
+          if (!document.body.style.margin) {
+            document.body.style.margin = '0';
+            document.body.style.padding = '0';
+          }
+        },
+        
+        // FAIL SAFE: Preconnect to critical origins
+        preconnect() {
+          const origins = [
+            'https://okz.onrender.com',
+            'https://fonts.googleapis.com',
+            'https://maps.googleapis.com'
+          ];
+          
+          origins.forEach(origin => {
+            const link = document.createElement('link');
+            link.rel = 'preconnect';
+            link.href = origin;
+            link.crossOrigin = 'anonymous';
+            document.head.appendChild(link);
+          });
+        },
+        
+        // FAIL HARD: Check browser compatibility
+        checkBrowserSupport() {
+          const checks = {
+            module: 'noModule' in HTMLScriptElement.prototype,
+            es6: (() => { try { eval('let x = 1'); return true; } catch(e) { return false; } })(),
+            fetch: typeof window.fetch !== 'undefined',
+            promise: typeof Promise !== 'undefined'
+          };
+          
+          const supported = Object.values(checks).every(Boolean);
+          
+          if (!supported) {
+            const appDiv = document.getElementById('app');
+            if (appDiv) {
+              appDiv.innerHTML = `
+                <div class="fallback-shell">
+                  <div class="fallback-card">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🌐</div>
+                    <h1 class="fallback-title">Browser Not Supported</h1>
+                    <p class="fallback-text">
+                      Please update your browser to the latest version.
+                    </p>
+                  </div>
+                </div>
+              `;
+            }
+            return false;
+          }
+          return true;
+        }
+      };
+      
+      // Initialize fallbacks
+      window.__OKZ_FALLBACKS.validateStructure();
+      window.__OKZ_FALLBACKS.preconnect();
+      
+      // Check browser support (FAIL HARD)
+      if (!window.__OKZ_FALLBACKS.checkBrowserSupport()) {
+        throw new Error('Browser not supported');
+      }
+      
+      // Start load timer (FAIL SAFE)
+      window.__OKZ_FALLBACKS.startLoadTimer();
+    </script>
+    
+    <!-- FAIL SAFE: Noscript fallback -->
+    <noscript>
+      <style>
+        #app {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+          padding: 20px;
+        }
+        .noscript-card {
+          background: white;
+          border-radius: 24px;
+          padding: 40px;
+          max-width: 400px;
+          text-align: center;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+      </style>
+      <div id="app">
+        <div class="noscript-card">
+          <div style="font-size: 4rem; margin-bottom: 1rem;">⚡</div>
+          <h1 style="color: #1a2b56; margin-bottom: 1rem;">JavaScript Required</h1>
+          <p style="color: #666; margin-bottom: 2rem;">
+            Please enable JavaScript to use OKZ Sports booking system.
+          </p>
+        </div>
+      </div>
+    </noscript>
+    
     <title>OKZ Sports | Padel & Tennis Booking</title>
   </head>
   <body>
-    <div id="app"></div>
+    <!-- FAIL SAFE: Loading indicator (shown immediately) -->
+    <div id="app">
+      <div class="fallback-shell">
+        <div class="fallback-card">
+          <div style="font-size: 4rem; margin-bottom: 1rem;">🎾</div>
+          <h1 class="fallback-title">OKZ Sports</h1>
+          <p class="fallback-text">Loading your experience...</p>
+          <div class="fallback-progress" role="progressbar" aria-label="Loading">
+            <div class="fallback-progress-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <script type="module" src="/src/main.jsx"></script>
+    <!-- FAIL HARD: Script loading with integrity checks -->
+    <script type="module" src="/src/main.jsx" 
+            onload="window.__OKZ_FALLBACKS.loadingState.main = true; console.log('[HTML] Main script loaded');"
+            onerror="window.__OKZ_FALLBACKS.showFallbackUI(new Error('Failed to load application'));">
+    </script>
+    
+    <!-- FAIL SAFE: Register service worker for offline support (optional) -->
+    <script>
+      if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.warn('[HTML] Service worker registration failed:', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
