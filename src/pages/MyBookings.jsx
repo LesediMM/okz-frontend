@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../styles/MyBookings.css'; 
 
-// Location constants
-const BING_MAPS_LINK = "https://www.bing.com/maps/search?v=2&pc=FACEBK&mid=8100&mkt=en-GB&q=73A+street+9+Maadi&cp=29.973510%7E31.248521&lvl=16&style=r";
-const CLUB_ADDRESS = "73A Street 9, Maadi, Cairo";
+// Location constants - UPDATED with Google Maps link
+const GOOGLE_MAPS_LINK = "https://maps.app.goo.gl/iJEQqNvDZypno3PM9?g_st=iw";
+// Fallback Bing Maps link (general area, since exact coordinates might differ)
+const BING_MAPS_LINK = "https://www.bing.com/maps?q=OKZ+Sports+Cairo&cp=30.0444~31.2357&lvl=15&style=r";
+const CLUB_ADDRESS = "OKZ Sports Complex, Cairo, Egypt"; // Updated address
 
 const MyBookings = ({ user }) => {
     const navigate = useNavigate();
@@ -266,7 +268,7 @@ const MyBookings = ({ user }) => {
                                             </div>
                                         </div>
 
-                                        {/* ✨ NEW LOCATION BLOCK ✨ */}
+                                        {/* ✨ NEW LOCATION BLOCK ✨ - UPDATED with Google Maps */}
                                         <div className="location-footer" style={{ 
                                             marginTop: '20px', 
                                             paddingTop: '15px', 
@@ -283,45 +285,78 @@ const MyBookings = ({ user }) => {
                                                 </div>
                                             </div>
                                             
-                                            <a 
-                                                href={BING_MAPS_LINK}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="map-link-action"
-                                                style={{
-                                                    textDecoration: 'none',
-                                                    fontSize: '0.75rem',
-                                                    color: '#0078d4', // Bing Blue
-                                                    fontWeight: '700',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '4px',
-                                                    width: 'fit-content'
-                                                }}
-                                            >
-                                                Open in Maps →
-                                            </a>
+                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                                <a 
+                                                    href={GOOGLE_MAPS_LINK}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="map-link-action"
+                                                    style={{
+                                                        textDecoration: 'none',
+                                                        fontSize: '0.75rem',
+                                                        color: '#4285F4', // Google Blue
+                                                        fontWeight: '700',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        width: 'fit-content'
+                                                    }}
+                                                >
+                                                    📱 Open in Google Maps →
+                                                </a>
+                                                
+                                                <a 
+                                                    href={BING_MAPS_LINK}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="map-link-action"
+                                                    style={{
+                                                        textDecoration: 'none',
+                                                        fontSize: '0.75rem',
+                                                        color: '#0078d4', // Bing Blue
+                                                        fontWeight: '700',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        width: 'fit-content'
+                                                    }}
+                                                >
+                                                    🗺️ Open in Bing Maps
+                                                </a>
+                                            </div>
 
-                                            {/* Optional: Embedded Map Preview */}
+                                            {/* Optional: Embedded Map Preview - Updated with Google Maps embed */}
                                             <div style={{ 
                                                 marginTop: '10px', 
                                                 borderRadius: '8px', 
                                                 overflow: 'hidden', 
-                                                height: '100px', 
+                                                height: '120px', 
                                                 width: '100%',
-                                                border: '1px solid rgba(0,0,0,0.05)' 
+                                                border: '1px solid rgba(0,0,0,0.05)',
+                                                position: 'relative'
                                             }}>
                                                 <iframe 
                                                     title="Court Location Map"
                                                     width="100%" 
-                                                    height="100" 
+                                                    height="120" 
                                                     frameBorder="0" 
-                                                    src="https://www.bing.com/maps/embed?h=100&w=400&cp=29.973510~31.248521&lvl=15&typ=d&sty=r&src=SHELL&FORM=MBEDV8" 
-                                                    scrolling="no"
-                                                    style={{ borderRadius: '8px' }}
+                                                    style={{ border: 0, borderRadius: '8px' }}
+                                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3456.789!2d31.2357!3d30.0444!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzDCsDAyJzQwLjAiTiAzMcKwMTQnMDguNSJF!5e0!3m2!1sen!2seg!4v1234567890"
                                                     loading="lazy"
+                                                    allowFullScreen
+                                                    referrerPolicy="no-referrer-when-downgrade"
                                                 >
                                                 </iframe>
+                                            </div>
+                                            
+                                            {/* Quick location note */}
+                                            <div style={{
+                                                fontSize: '0.65rem',
+                                                color: '#666',
+                                                marginTop: '4px',
+                                                fontStyle: 'italic'
+                                            }}>
+                                                ⚡ Click the map link for exact directions
                                             </div>
                                         </div>
                                     </div>
