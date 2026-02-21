@@ -178,6 +178,10 @@ const MyBookings = ({ user }) => {
     const [error, setError] = useState(null);
     const [offlineNotice, setOfflineNotice] = useState(false);
     
+    // Step 1: Add Pagination State
+    const [page, setPage] = useState(1);
+    const limit = 10; // Items per page
+    
     // FIX 1: Changed 'paddle' to 'padel' in initial state
     const [pricing, setPricing] = useState(() => {
         // FAIL SAFE: Load from cache on init
@@ -228,8 +232,8 @@ const MyBookings = ({ user }) => {
     };
 
     /**
-     * ✅ FIX: useCallback dependency set to user?.email 
-     * This prevents the infinite loop and ensures we only fetch when we have a user identity.
+     * ✅ FIX: useCallback dependency set to user?.email AND page
+     * This prevents the infinite loop and ensures we only fetch when we have a user identity or page changes.
      */
     const fetchBookings = useCallback(async () => {
         if (!user?.email) {
@@ -259,8 +263,9 @@ const MyBookings = ({ user }) => {
         try {
             // FAIL HARD: Add timeout and retry
             const response = await BookingsFallbacks.retry(async () => {
+                // Step 2: Update the fetch URL with pagination parameters
                 return await BookingsFallbacks.withTimeout(
-                    fetch('https://okz.onrender.com/api/v1/bookings', {
+                    fetch(`https://okz.onrender.com/api/v1/bookings?page=${page}&limit=${limit}`, {
                         method: 'GET',
                         headers: {
                             'x-user-email': user.email,
@@ -305,7 +310,7 @@ const MyBookings = ({ user }) => {
         } finally {
             setLoading(false);
         }
-    }, [user?.email]);
+    }, [user?.email, page]); // Added 'page' to dependency array
 
     useEffect(() => {
         fetchBookings();
@@ -530,181 +535,225 @@ const MyBookings = ({ user }) => {
                     )}
                 </div>
             ) : (
-                <div className="bookings-stack">
-                    {(bookings || []).length > 0 ? (
-                        bookings.map((b, index) => {
-                            const ratePerHour = getRatePerHour(b?.courtType);
-                            return (
-                                <div key={b?._id || index} className={`glass-panel ticket-card ${b?.status === 'cancelled' ? 'ticket-cancelled' : ''}`}>
-                                    <div className="ticket-main">
-                                        <div className="sport-tag" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                                            <div className="status-pill" style={{ fontSize: '0.6rem', padding: '2px 8px' }}>
-                                                {getCourtIcon(b?.courtType)} {(b?.courtType || 'Sport').toUpperCase()}
-                                            </div>
-                                            {b?.duration > 1 && (
-                                                <div className="duration-badge" style={{
-                                                    fontSize: '0.6rem',
-                                                    padding: '2px 8px',
-                                                    background: 'rgba(0,0,0,0.05)',
-                                                    borderRadius: '12px'
-                                                }}>
-                                                    {getDurationDisplay(b.duration)}
+                <>
+                    <div className="bookings-stack">
+                        {(bookings || []).length > 0 ? (
+                            bookings.map((b, index) => {
+                                const ratePerHour = getRatePerHour(b?.courtType);
+                                return (
+                                    <div key={b?._id || index} className={`glass-panel ticket-card ${b?.status === 'cancelled' ? 'ticket-cancelled' : ''}`}>
+                                        <div className="ticket-main">
+                                            <div className="sport-tag" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                                                <div className="status-pill" style={{ fontSize: '0.6rem', padding: '2px 8px' }}>
+                                                    {getCourtIcon(b?.courtType)} {(b?.courtType || 'Sport').toUpperCase()}
                                                 </div>
-                                            )}
-                                        </div>
-                                        <h3 className="court-title">
-                                            Court {b?.courtNumber || '?'}
-                                            <span style={{ fontSize: '0.8rem', marginLeft: '10px', fontWeight: 'normal', opacity: 0.7 }}>
-                                                {ratePerHour} EGP/hr
-                                            </span>
-                                        </h3>
-                                        
-                                        {/* Ticket Details */}
-                                        <div className="ticket-details" style={{ display: 'flex', gap: '24px', marginTop: 'auto' }}>
-                                            <div className="detail-item">
-                                                <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>DATE</span>
-                                                <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{formatDate(b?.date)}</span>
+                                                {b?.duration > 1 && (
+                                                    <div className="duration-badge" style={{
+                                                        fontSize: '0.6rem',
+                                                        padding: '2px 8px',
+                                                        background: 'rgba(0,0,0,0.05)',
+                                                        borderRadius: '12px'
+                                                    }}>
+                                                        {getDurationDisplay(b.duration)}
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div className="detail-item">
-                                                <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>TIME</span>
-                                                <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{b?.timeSlot || "--:--"}</span>
-                                            </div>
-                                            <div className="detail-item">
-                                                <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>DURATION</span>
-                                                <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{getDurationDisplay(b?.duration)}</span>
-                                            </div>
-                                        </div>
-
-                                        {/* LOCATION BLOCK - Google Maps Only */}
-                                        <div className="location-footer" style={{ 
-                                            marginTop: '20px', 
-                                            paddingTop: '15px', 
-                                            borderTop: '1px dashed rgba(0,0,0,0.1)',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: '8px'
-                                        }}>
-                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                                                <span style={{ fontSize: '1rem' }}>📍</span>
-                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                    <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--brand-navy)', opacity: 0.6 }}>LOCATION</span>
-                                                    <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--brand-navy)' }}>{CLUB_ADDRESS}</span>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Google Maps Link */}
-                                            <a 
-                                                href={GOOGLE_MAPS_LINK}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="map-link-action"
-                                                style={{
-                                                    textDecoration: 'none',
-                                                    fontSize: '0.75rem',
-                                                    color: '#4285F4',
-                                                    fontWeight: '700',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '4px',
-                                                    width: 'fit-content'
-                                                }}
-                                            >
-                                                📱 Open in Google Maps →
-                                            </a>
-
-                                            {/* Google Maps Embed */}
-                                            <div style={{ 
-                                                marginTop: '10px', 
-                                                borderRadius: '8px', 
-                                                overflow: 'hidden', 
-                                                height: '120px', 
-                                                width: '100%',
-                                                border: '1px solid rgba(0,0,0,0.05)',
-                                                position: 'relative'
-                                            }}>
-                                                <iframe 
-                                                    title="Court Location Map"
-                                                    width="100%" 
-                                                    height="120" 
-                                                    frameBorder="0" 
-                                                    style={{ border: 0, borderRadius: '8px' }}
-                                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3456.789!2d31.2357!3d30.0444!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzDCsDAyJzQwLjAiTiAzMcKwMTQnMDguNSJF!5e0!3m2!1sen!2seg!4v1234567890"
-                                                    loading="lazy"
-                                                    allowFullScreen
-                                                    referrerPolicy="no-referrer-when-downgrade"
-                                                >
-                                                </iframe>
-                                            </div>
-                                            
-                                            <div style={{
-                                                fontSize: '0.65rem',
-                                                color: '#666',
-                                                marginTop: '4px',
-                                                fontStyle: 'italic'
-                                            }}>
-                                                ⚡ Click the map link for exact directions
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="ticket-divider"></div>
-
-                                    <div className="ticket-stub">
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                            <span className={`status-pill ${getStatusClass(b?.status)}`}>
-                                                {b?.status || 'Pending'}
-                                            </span>
-                                            <div className="price-tag" style={{ fontSize: '1.2rem' }}>
-                                                {formatPrice(b?.totalPrice || (b?.duration * ratePerHour))}
-                                            </div>
-                                            <span style={{ fontSize: '0.65rem', opacity: 0.6 }}>
-                                                {ratePerHour} EGP × {b?.duration || 1}h
-                                            </span>
-                                            {b?.paymentStatus === 'pending' && b?.status !== 'cancelled' && (
-                                                <span style={{ fontSize: '0.65rem', color: 'var(--system-red)', fontWeight: '800', marginTop: '5px' }}>
-                                                    ⚠️ UNPAID
+                                            <h3 className="court-title">
+                                                Court {b?.courtNumber || '?'}
+                                                <span style={{ fontSize: '0.8rem', marginLeft: '10px', fontWeight: 'normal', opacity: 0.7 }}>
+                                                    {ratePerHour} EGP/hr
                                                 </span>
-                                            )}
+                                            </h3>
+                                            
+                                            {/* Ticket Details */}
+                                            <div className="ticket-details" style={{ display: 'flex', gap: '24px', marginTop: 'auto' }}>
+                                                <div className="detail-item">
+                                                    <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>DATE</span>
+                                                    <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{formatDate(b?.date)}</span>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>TIME</span>
+                                                    <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{b?.timeSlot || "--:--"}</span>
+                                                </div>
+                                                <div className="detail-item">
+                                                    <span className="date-label" style={{ display: 'block', fontSize: '0.65rem' }}>DURATION</span>
+                                                    <span style={{ fontWeight: '700', color: 'var(--brand-navy)' }}>{getDurationDisplay(b?.duration)}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* LOCATION BLOCK - Google Maps Only */}
+                                            <div className="location-footer" style={{ 
+                                                marginTop: '20px', 
+                                                paddingTop: '15px', 
+                                                borderTop: '1px dashed rgba(0,0,0,0.1)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '8px'
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                                    <span style={{ fontSize: '1rem' }}>📍</span>
+                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                        <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--brand-navy)', opacity: 0.6 }}>LOCATION</span>
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--brand-navy)' }}>{CLUB_ADDRESS}</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Google Maps Link */}
+                                                <a 
+                                                    href={GOOGLE_MAPS_LINK}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="map-link-action"
+                                                    style={{
+                                                        textDecoration: 'none',
+                                                        fontSize: '0.75rem',
+                                                        color: '#4285F4',
+                                                        fontWeight: '700',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        width: 'fit-content'
+                                                    }}
+                                                >
+                                                    📱 Open in Google Maps →
+                                                </a>
+
+                                                {/* Google Maps Embed */}
+                                                <div style={{ 
+                                                    marginTop: '10px', 
+                                                    borderRadius: '8px', 
+                                                    overflow: 'hidden', 
+                                                    height: '120px', 
+                                                    width: '100%',
+                                                    border: '1px solid rgba(0,0,0,0.05)',
+                                                    position: 'relative'
+                                                }}>
+                                                    <iframe 
+                                                        title="Court Location Map"
+                                                        width="100%" 
+                                                        height="120" 
+                                                        frameBorder="0" 
+                                                        style={{ border: 0, borderRadius: '8px' }}
+                                                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3456.789!2d31.2357!3d30.0444!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzDCsDAyJzQwLjAiTiAzMcKwMTQnMDguNSJF!5e0!3m2!1sen!2seg!4v1234567890"
+                                                        loading="lazy"
+                                                        allowFullScreen
+                                                        referrerPolicy="no-referrer-when-downgrade"
+                                                    >
+                                                    </iframe>
+                                                </div>
+                                                
+                                                <div style={{
+                                                    fontSize: '0.65rem',
+                                                    color: '#666',
+                                                    marginTop: '4px',
+                                                    fontStyle: 'italic'
+                                                }}>
+                                                    ⚡ Click the map link for exact directions
+                                                </div>
+                                            </div>
                                         </div>
                                         
-                                        {/* Cancel button */}
-                                        {b?.status === 'active' && (
-                                            <button
-                                                onClick={() => handleCancel(b._id)}
-                                                className="cancel-btn"
-                                                style={{
-                                                    marginTop: '10px',
-                                                    padding: '5px 10px',
-                                                    background: 'rgba(255,59,48,0.1)',
-                                                    border: '1px solid rgba(255,59,48,0.3)',
-                                                    borderRadius: '6px',
-                                                    color: 'var(--system-red)',
-                                                    fontSize: '0.7rem',
-                                                    cursor: 'pointer',
-                                                    width: '100%'
-                                                }}
-                                            >
-                                                Cancel Booking
-                                            </button>
-                                        )}
+                                        <div className="ticket-divider"></div>
+
+                                        <div className="ticket-stub">
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                                <span className={`status-pill ${getStatusClass(b?.status)}`}>
+                                                    {b?.status || 'Pending'}
+                                                </span>
+                                                <div className="price-tag" style={{ fontSize: '1.2rem' }}>
+                                                    {formatPrice(b?.totalPrice || (b?.duration * ratePerHour))}
+                                                </div>
+                                                <span style={{ fontSize: '0.65rem', opacity: 0.6 }}>
+                                                    {ratePerHour} EGP × {b?.duration || 1}h
+                                                </span>
+                                                {b?.paymentStatus === 'pending' && b?.status !== 'cancelled' && (
+                                                    <span style={{ fontSize: '0.65rem', color: 'var(--system-red)', fontWeight: '800', marginTop: '5px' }}>
+                                                        ⚠️ UNPAID
+                                                    </span>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Cancel button */}
+                                            {b?.status === 'active' && (
+                                                <button
+                                                    onClick={() => handleCancel(b._id)}
+                                                    className="cancel-btn"
+                                                    style={{
+                                                        marginTop: '10px',
+                                                        padding: '5px 10px',
+                                                        background: 'rgba(255,59,48,0.1)',
+                                                        border: '1px solid rgba(255,59,48,0.3)',
+                                                        borderRadius: '6px',
+                                                        color: 'var(--system-red)',
+                                                        fontSize: '0.7rem',
+                                                        cursor: 'pointer',
+                                                        width: '100%'
+                                                    }}
+                                                >
+                                                    Cancel Booking
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })
-                    ) : (
-                        <div className="glass-panel empty-state" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-                            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎾</div>
-                            <h3>No sessions yet</h3>
-                            <p className="text-muted">Your reserved courts will appear here as tickets.</p>
-                            <p style={{ fontSize: '0.85rem', marginTop: '5px', opacity: 0.7 }}>
-                                Rates: Tennis {formatPrice(pricing.tennis)}/hr • Padel {formatPrice(pricing.padel)}/hr
-                            </p>
-                            <button onClick={() => navigate('/booking')} className="book-now-btn" style={{ maxWidth: '200px', margin: '20px auto' }}>
-                                Find a Court
+                                );
+                            })
+                        ) : (
+                            <div className="glass-panel empty-state" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+                                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎾</div>
+                                <h3>No sessions yet</h3>
+                                <p className="text-muted">Your reserved courts will appear here as tickets.</p>
+                                <p style={{ fontSize: '0.85rem', marginTop: '5px', opacity: 0.7 }}>
+                                    Rates: Tennis {formatPrice(pricing.tennis)}/hr • Padel {formatPrice(pricing.padel)}/hr
+                                </p>
+                                <button onClick={() => navigate('/booking')} className="book-now-btn" style={{ maxWidth: '200px', margin: '20px auto' }}>
+                                    Find a Court
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Step 3: Add Pagination Controls */}
+                    {(bookings.length > 0 || page > 1) && (
+                        <div className="pagination-controls" style={{ 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center', 
+                            gap: '20px', 
+                            marginTop: '30px',
+                            paddingBottom: '40px' 
+                        }}>
+                            <button 
+                                disabled={page === 1}
+                                onClick={() => setPage(prev => prev - 1)}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '20px',
+                                    border: '1px solid #ddd',
+                                    background: page === 1 ? '#f5f5f5' : '#fff',
+                                    cursor: page === 1 ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                ← Newer
+                            </button>
+                            
+                            <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>Page {page}</span>
+
+                            <button 
+                                disabled={bookings.length < limit}
+                                onClick={() => setPage(prev => prev + 1)}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '20px',
+                                    border: '1px solid #ddd',
+                                    background: bookings.length < limit ? '#f5f5f5' : '#fff',
+                                    cursor: bookings.length < limit ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                Older →
                             </button>
                         </div>
                     )}
-                </div>
+                </>
             )}
         </div>
     );
