@@ -429,7 +429,7 @@ const UserDashboard = ({ user }) => {
                     <h3 style={{ marginBottom: '1rem' }}>Club Rules & Rates</h3>
                     <div className="apple-stat-list">
                         <div className="stat-row">
-                            <span>🎾 Tennis Rate</span>
+                            <span>Tennis Rate</span>
                             <strong>{formatPrice(pricing.tennis)}/hr</strong>
                         </div>
                         {/* FIX 3B: Changed 'pricing.paddle' to 'pricing.padel' */}
@@ -438,15 +438,15 @@ const UserDashboard = ({ user }) => {
                             <strong>{formatPrice(pricing.padel)}/hr</strong>
                         </div>
                         <div className="stat-row" style={{ borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: '5px', paddingTop: '10px' }}>
-                            <span>⏰ Booking Slots</span>
+                            <span>Booking Slots</span>
                             <strong>Full Hours Only</strong>
                         </div>
                         <div className="stat-row">
-                            <span>🕒 Opening</span>
+                            <span>Opening</span>
                             <strong>08:00 AM</strong>
                         </div>
                         <div className="stat-row">
-                            <span>🕒 Closing</span>
+                            <span>Closing</span>
                             <strong>10:00 PM</strong>
                         </div>
                         <div className="stat-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(0,0,0,0.05)' }}>

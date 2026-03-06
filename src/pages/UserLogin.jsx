@@ -76,7 +76,7 @@ const LoginFallbacks = {
                 if (isLast) throw err;
                 
                 const wait = 1000 * Math.pow(2, i);
-                console.log(`🔄 Login retry ${i + 1}/${maxRetries} in ${wait}ms`);
+                console.log(` Login retry ${i + 1}/${maxRetries} in ${wait}ms`);
                 await new Promise(r => setTimeout(r, wait));
             }
         }

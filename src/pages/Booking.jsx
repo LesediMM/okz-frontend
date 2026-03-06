@@ -78,7 +78,7 @@ const BookingFallbacks = {
                 if (err.message?.includes('Validation')) throw err;
                 
                 const wait = 1000 * Math.pow(2, i);
-                console.log(`🔄 Retry ${i + 1}/${maxRetries} in ${wait}ms`);
+                console.log(`Retry ${i + 1}/${maxRetries} in ${wait}ms`);
                 await new Promise(r => setTimeout(r, wait));
             }
         }
@@ -106,7 +106,7 @@ const BookingFallbacks = {
         
         processQueue() {
             if (this.isOnline && BookingFallbacks.bookingQueue.length > 0) {
-                console.log(`🔄 Processing ${BookingFallbacks.bookingQueue.length} queued bookings...`);
+                console.log(`Processing ${BookingFallbacks.bookingQueue.length} queued bookings...`);
                 // Will be processed by component when user returns
             }
         }
@@ -377,7 +377,7 @@ const Booking = ({ user }) => {
             if (response.ok) { 
                 // Success case
                 BookingFallbacks.failureCount = 0; // Reset on success
-                alert(`✅ Booking confirmed! Total: ${calculateTotalPrice()} EGP`);
+                alert(`Booking confirmed! Total: ${calculateTotalPrice()} EGP`);
                 navigate('/my-bookings'); 
             } else { 
                 // Handle validation errors
@@ -425,7 +425,7 @@ const Booking = ({ user }) => {
                     zIndex: 1000,
                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                 }}>
-                    📱 Offline mode - Your booking is saved locally
+                     Offline mode - Your booking is saved locally
                 </div>
             )}
 
@@ -441,8 +441,8 @@ const Booking = ({ user }) => {
                     borderRadius: '30px',
                     fontSize: '0.9rem'
                 }}>
-                    <span>🎾 Tennis: {pricing.tennis} EGP/hr</span>
-                    <span>🏸 Padel: {pricing.padel} EGP/hr</span>
+                    <span> Tennis: {pricing.tennis} EGP/hr</span>
+                    <span> Padel: {pricing.padel} EGP/hr</span>
                 </div>
             </header>
 

@@ -91,7 +91,7 @@ const BookingsFallbacks = {
                 if (isLast) throw err;
                 
                 const wait = 1000 * Math.pow(2, i);
-                console.log(`🔄 Retry ${i + 1}/${maxRetries} in ${wait}ms`);
+                console.log(`Retry ${i + 1}/${maxRetries} in ${wait}ms`);
                 await new Promise(r => setTimeout(r, wait));
             }
         }
@@ -483,7 +483,7 @@ const MyBookings = ({ user }) => {
                     zIndex: 1000,
                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                 }}>
-                    📱 Offline mode - Showing cached data
+                    Offline mode - Showing cached data
                 </div>
             )}
 
@@ -505,8 +505,8 @@ const MyBookings = ({ user }) => {
                     fontSize: '0.9rem',
                     justifyContent: 'center'
                 }}>
-                    <span>🎾 Tennis: {formatPrice(pricing.tennis)}/hr</span>
-                    <span>🏸 Padel: {formatPrice(pricing.padel)}/hr</span>
+                    <span>Tennis: {formatPrice(pricing.tennis)}/hr</span>
+                    <span>Padel: {formatPrice(pricing.padel)}/hr</span>
                 </div>
             </header>
 
