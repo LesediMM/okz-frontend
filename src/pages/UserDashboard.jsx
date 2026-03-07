@@ -343,9 +343,9 @@ const UserDashboard = ({ user }) => {
                             marginTop: '8px',
                             fontSize: '0.85rem'
                         }}>
-                            <span style={{ marginRight: '15px' }}>🎾 Tennis: {formatPrice(pricing.tennis)}/hr</span>
+                            <span style={{ marginRight: '15px' }}>Tennis: {formatPrice(pricing.tennis)}/hr</span>
                             {/* FIX 3A: Changed 'pricing.paddle' to 'pricing.padel' */}
-                            <span>🏸 Padel: {formatPrice(pricing.padel)}/hr</span>
+                            <span>Padel: {formatPrice(pricing.padel)}/hr</span>
                         </div>
                     </div>
                     <button onClick={() => navigate('/booking')} className="book-now-btn">
@@ -434,7 +434,7 @@ const UserDashboard = ({ user }) => {
                         </div>
                         {/* FIX 3B: Changed 'pricing.paddle' to 'pricing.padel' */}
                         <div className="stat-row">
-                            <span>🏸 Padel Rate</span>
+                            <span>Padel Rate</span>
                             <strong>{formatPrice(pricing.padel)}/hr</strong>
                         </div>
                         <div className="stat-row" style={{ borderTop: '1px solid rgba(0,0,0,0.05)', marginTop: '5px', paddingTop: '10px' }}>
